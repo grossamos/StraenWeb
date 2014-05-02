@@ -2,37 +2,55 @@ import cherrypy
 import json
 import socket
 import sqlite3
+import sys
 import threading
+
+class Location(object):
+	def __init__(self):
+		self.latitude = 0.0
+		self.longitude = 0.0
+		self.altitude = 0.0
+		super(Location, self).__init__()
 
 class Database(object):
 	def __init__(self):
 		super(Database, self).__init__()
 
+	def execute(self, sql):
+		try:
+			con = sqlite3.connect('workouts.sqlite')
+			with con:
+				cur = con.cursor()
+				cur.execute(sql)
+				return cur
+		except:
+			pass
+		return None
+
 	def create(self):
-		con = sqlite3.connect('workouts.db')
-		with con:
-			self.cur = con.cursor()
-			self.cur.execute("create table location (device text primary key, activityId integer, latitude double, longitude double, altitude double)")
+		self.execute("create table location (id integer primary key, device text primary key, activityId integer, latitude double, longitude double, altitude double)")
 
 	def storeLocation(self, device, activityId, latitude, longitude, altitude):
-		con = sqlite3.connect('workouts.db')
-		with con:
-			sql = "insert into location values(" + device + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
-			self.cur.execute(sql)
+		sql = "insert into location values(NULL, '" + device + "', " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
+		self.execute(sql)
 
 	def listLocations(self, device, activityId):
 		locations = []
-
-		con = sqlite3.connect('workouts.db')
-		with con:
-			sql = "select latitude, longitude, altitude from location where device = '" + device + "' and activityId = " + str(activityId)
-			self.cur.execute(sql)
-
+		sql = "select latitude, longitude, altitude from location where device = '" + device + "' and activityId = " + str(activityId)
+		cur = self.execute(sql)
+		rows = cur.fetchall()
+		for row in rows:
+			location = Location()
+			location.latitude = float(row["latitude"])
+			location.longitude = float(row["longitude"])
+			location.altitude = float(row["altitude"])
+			locations.append(location)
 		return locations
 
 class DataListener(threading.Thread):
 	def __init__(self, db):
 		self.db = db
+		self.db.create()
 		self.stop = threading.Event()
 		super(DataListener, self).__init__()
 
@@ -40,8 +58,17 @@ class DataListener(threading.Thread):
 		self.stop.set()
 
 	def parseJsonStr(self, str):
-		decoder = json.JSONDecoder()
-		print json.dumps(str)
+		try:
+			decoder = json.JSONDecoder()
+			decodedObj = json.loads(str)
+			deviceId = decodedObj["DeviceId"]
+			activityId = decodedObj["ActivityId"]
+			lat = decodedObj["Latitude"]
+			lon = decodedObj["Longitude"]
+			alt = decodedObj["Altitude"]
+			self.db.storeLocation(deviceId, activityId, lat, lon, alt)
+		except KeyError:
+			pass
 
 	def readLine(self, sock):
 		while not self.stop.is_set():
@@ -121,10 +148,6 @@ class FollowMyWorkout(object):
 			html += str
 
 		html += """
-				new google.maps.LatLng(37.772323, -122.214897),
-				new google.maps.LatLng(21.291982, -157.821856),
-				new google.maps.LatLng(-18.142599, 178.431),
-				new google.maps.LatLng(-27.46758, 153.027892)
 			];
 
 			var flightPath = new google.maps.Polyline
