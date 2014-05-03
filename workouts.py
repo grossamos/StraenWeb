@@ -58,14 +58,24 @@ class Database(object):
 
 	def listLocations(self, deviceId, activityId):
 		locations = []
-		sql = "select latitude, longitude, altitude from location where device = " + str(deviceId) + " and activityId = " + str(activityId)
+		sql = "select latitude, longitude, altitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 		rows = self.execute(sql)
-		for row in rows:
-			location = Location()
-			location.latitude = float(row["latitude"])
-			location.longitude = float(row["longitude"])
-			location.altitude = float(row["altitude"])
-			locations.append(location)
+		if rows != None:
+			for row in rows:
+				location = Location()
+				location.latitude = row[0]
+				location.longitude = row[1]
+				location.altitude = row[2]
+				locations.append(location)
+		return locations
+
+	def listLocationsForLatestActivity(self, deviceId):
+		locations = []
+		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+		rows = self.execute(sql)
+		if len(rows) > 0:
+			activityId = rows[0][0]
+			locations = self.listLocations(deviceId, activityId)
 		return locations
 
 class DataListener(threading.Thread):
@@ -95,7 +105,6 @@ class DataListener(threading.Thread):
 		while not self.stop.is_set():
 			data, addr = sock.recvfrom(1024)
 			return data
-		
 		return ""
 
 	def run(self):
@@ -123,7 +132,8 @@ class FollowMyWorkout(object):
 		super(FollowMyWorkout, self).__init__()
 	
 	def index(self):
-		locations = self.mgr.db.listLocations("", 0)
+		deviceId = self.getDeviceId("")
+		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 		html = """
 
