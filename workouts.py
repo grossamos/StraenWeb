@@ -22,23 +22,44 @@ class Database(object):
 			with con:
 				cur = con.cursor()
 				cur.execute(sql)
-				return cur
+				return cur.fetchall()
 		except:
 			pass
+		finally:
+			if con:
+				con.close()
 		return None
 
 	def create(self):
-		self.execute("create table location (id integer primary key, device text primary key, activityId integer, latitude double, longitude double, altitude double)")
+		try:
+			self.execute("create table location (id integer primary key, deviceId integer, activityId integer, latitude double, longitude double, altitude double)")
+		except:
+			pass
 
-	def storeLocation(self, device, activityId, latitude, longitude, altitude):
-		sql = "insert into location values(NULL, '" + device + "', " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
+		try:
+			self.execute("create table device (id integer primary key, device text)")
+		except:
+			pass
+
+	def getDeviceId(self, deviceStr):
+		sql = "select id from device where device = '" + deviceStr + "'"
+		rows = self.execute(sql)
+		if len(rows) == 0:
+			sql = "insert into device values(NULL, '" + deviceStr + "')"
+			rows = self.execute(sql)
+			sql = "select id from device where device = '" + deviceStr + "'"
+			rows = self.execute(sql)
+		return rows[0][0]
+
+	def storeLocation(self, deviceStr, activityId, latitude, longitude, altitude):
+		deviceId = self.getDeviceId(deviceStr)
+		sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
 		self.execute(sql)
 
-	def listLocations(self, device, activityId):
+	def listLocations(self, deviceId, activityId):
 		locations = []
-		sql = "select latitude, longitude, altitude from location where device = '" + device + "' and activityId = " + str(activityId)
-		cur = self.execute(sql)
-		rows = cur.fetchall()
+		sql = "select latitude, longitude, altitude from location where device = " + str(deviceId) + " and activityId = " + str(activityId)
+		rows = self.execute(sql)
 		for row in rows:
 			location = Location()
 			location.latitude = float(row["latitude"])
