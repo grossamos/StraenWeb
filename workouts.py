@@ -132,7 +132,7 @@ class FollowMyWorkout(object):
 		super(FollowMyWorkout, self).__init__()
 	
 	def index(self):
-		deviceId = self.getDeviceId("")
+		deviceId = self.mgr.db.getDeviceId("")
 		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 		html = """
@@ -209,4 +209,5 @@ class FollowMyWorkout(object):
 	index.exposed = True
 
 mgr = DataMgr()
+cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
 cherrypy.quickstart(FollowMyWorkout(mgr))
