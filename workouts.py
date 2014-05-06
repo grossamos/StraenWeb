@@ -98,8 +98,12 @@ class DataListener(threading.Thread):
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
 			self.db.storeLocation(deviceId, activityId, lat, lon, alt)
+		except ValueError:
+			print "ValueError in JSON data."
 		except KeyError:
-			pass
+			print "KeyError in JSON data."
+		except:
+			print "Error in JSON data."
 
 	def readLine(self, sock):
 		while not self.stop.is_set():
@@ -161,7 +165,8 @@ class FollowMyWorkout(object):
 """
 
 		if len(locations) > 0:
-			html += "center: new google.maps.LatLng(" + str(locations[0].latitude) + ", " + str(locations[0].longitude) + "),\n"
+			lastIndex = len(locations) - 1
+			html += "center: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),\n"
 		else:
 			html += "center: new google.maps.LatLng(0.0, 0.0),\n"
 
