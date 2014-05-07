@@ -136,11 +136,10 @@ class FollowMyWorkout(object):
 		super(FollowMyWorkout, self).__init__()
 	
 	def index(self):
-		deviceId = self.mgr.db.getDeviceId("")
+		deviceId = self.mgr.db.getDeviceId("E4F90A14-9763-49FD-B4E0-038D50A3D289")
 		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 		html = """
-
 <!DOCTYPE html>
 <html>
 
@@ -160,28 +159,25 @@ class FollowMyWorkout(object):
 	<script type="text/javascript">
 		function initialize()
 		{
-			var mapOptions =
-			{
-"""
-
+		var mapOptions =
+		{
+			"""
 		if len(locations) > 0:
 			lastIndex = len(locations) - 1
 			html += "center: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),\n"
 		else:
 			html += "center: new google.maps.LatLng(0.0, 0.0),\n"
-
+		
 		html += """
-				zoom: 10
+			zoom: 10
 			};
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
-
+			
 			var flightPlanCoordinates =
 			[
-"""
-
+			"""
 		for location in locations:
-			str = "new google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
-			html += str
+			html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
 
 		html += """
 			];
