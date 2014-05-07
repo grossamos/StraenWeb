@@ -159,29 +159,43 @@ class FollowMyWorkout(object):
 	<script type="text/javascript">
 		function initialize()
 		{
-		var mapOptions =
-		{
+			var mapOptions =
+			{
 			"""
 		if len(locations) > 0:
 			lastIndex = len(locations) - 1
-			html += "center: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),\n"
+			html += "\tcenter: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
 		else:
-			html += "center: new google.maps.LatLng(0.0, 0.0),\n"
+			html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
 		
 		html += """
-			zoom: 10
+				zoom: 10
 			};
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 			
 			var flightPlanCoordinates =
-			[
-			"""
+			["""
+
 		for location in locations:
 			html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
 
 		html += """
 			];
 
+			"""
+		if len(locations) > 0:
+			html += """
+			var marker = new google.maps.Marker
+			({
+				position: new google.maps.LatLng("""
+			html += str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
+			html += """
+				map: map,
+				title: 'Current Position'
+			});
+			"""
+
+		html += """
 			var flightPath = new google.maps.Polyline
 			({
 				path: flightPlanCoordinates,
