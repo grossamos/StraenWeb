@@ -56,13 +56,33 @@ class Database(object):
 			rows = self.execute(sql)
 		return rows[0][0]
 
+	def clearMetadata(self, deviceStr):
+		deviceId = self.getDeviceId(deviceStr)
+		sql = "delete from metadata where deviceId = " + str(deviceId)
+		self.execute(sql)
+
 	def storeMetadata(self, deviceStr, activityId, key, value):
 		deviceId = self.getDeviceId(deviceStr)
 		sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
 		self.execute(sql)
 
-	def getDistanceTraveled(self, deviceStr, activityId):
-		deviceId = self.getDeviceId(deviceStr)
+	def getMetaData(self, key, deviceId, activityId):
+		try:
+			sql = "select value from metadata where key = '" + key + "' and deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " limit 1"
+			rows = self.execute(sql)
+			if rows != None:
+				return rows[0][0]
+		except:
+			pass
+		return None
+
+	def getLatestMetaData(self, key, deviceId):
+		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+		rows = self.execute(sql)
+		if len(rows) > 0:
+			activityId = rows[0][0]
+			return self.getMetaData(key, deviceId, activityId)
+		return None
 
 	def storeLocation(self, deviceStr, activityId, latitude, longitude, altitude):
 		deviceId = self.getDeviceId(deviceStr)
@@ -114,6 +134,9 @@ class DataListener(threading.Thread):
 			alt = decodedObj["Altitude"]
 			self.db.storeLocation(deviceId, activityId, lat, lon, alt)
 
+			# Clear the metadata
+			self.db.clearMetadata(deviceId)
+
 			# Parse the metadata
 			for item in decodedObj.iteritems():
 				key = item[0]
@@ -125,7 +148,7 @@ class DataListener(threading.Thread):
 		except KeyError:
 			print "KeyError in JSON data."
 		except:
-			print "Error in JSON data."
+			print "Error parsing JSON data."
 
 	def readLine(self, sock):
 		while not self.stop.is_set():
@@ -152,16 +175,23 @@ class DataMgr(object):
 		self.listener.start()
 		super(DataMgr, self).__init__()
 
+	def terminate():
+		self.db = NULL
+		self.listener = NULL
+
 class FollowMyWorkout(object):
 	def __init__(self, mgr):
 		self.mgr = mgr
 		super(FollowMyWorkout, self).__init__()
 
 	def terminate():
+		self.mgr.listener.stop.set()
 		self.mgr = NULL
 
 	def index(self):
-		deviceId = self.mgr.db.getDeviceId("E4F90A14-9763-49FD-B4E0-038D50A3D289")
+		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
+		#deviceStr = "18877FE4-49D2-46EE-9BF3-2F5F8A8E798B"
+		deviceId = self.mgr.db.getDeviceId(deviceStr)
 		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 		html = """
@@ -199,7 +229,7 @@ class FollowMyWorkout(object):
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
 			var flightPlanCoordinates =
-			["""
+			[\n"""
 
 		for location in locations:
 			html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
@@ -210,15 +240,27 @@ class FollowMyWorkout(object):
 			"""
 		if len(locations) > 0:
 			html += """
-			var contentString = '<div id="content">'+
-			'<div id="siteNotice">'+
-			'</div>'+
-			'<h1 id="firstHeading" class="firstHeading">Last Known Position</h1>'+
-			'<div id="bodyContent">'+
-			'<p>Foo</p>'+
-			'</div>'+
+			var contentString = '<div id="content">' +
+			'<div id="siteNotice">' +
+			'</div>' +
+			'<h1 id="firstHeading" class="firstHeading">Last Known Position</h1>' +
+			'<div id="bodyContent">' +
+			'<p>"""
+			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
+			if distance != None:
+				html += "Distance = " + str(distance) + "<br>' + '"
+			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
+			if hr != None:
+				html += "Avg. Heart Rate = " + str(hr) + " bpm<br>' + '"
+			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
+			if speed != None:
+				html += "Avg. Speed = " + str(speed) + "<br>' + '"
+			html += "'"
+			html += """
+			'</p>' +
+			'</div>' +
 			'</div>';
-			
+
 			var infowindow = new google.maps.InfoWindow
 			({
 				content: contentString
