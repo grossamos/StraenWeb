@@ -41,6 +41,11 @@ class Database(object):
 		except:
 			pass
 
+		try:
+			self.execute("create table metadata (id integer primary key, deviceId integer, activityId integer, key text, value double)")
+		except:
+			pass
+
 	def getDeviceId(self, deviceStr):
 		sql = "select id from device where device = '" + deviceStr + "'"
 		rows = self.execute(sql)
@@ -50,6 +55,14 @@ class Database(object):
 			sql = "select id from device where device = '" + deviceStr + "'"
 			rows = self.execute(sql)
 		return rows[0][0]
+
+	def storeMetadata(self, deviceStr, activityId, key, value):
+		deviceId = self.getDeviceId(deviceStr)
+		sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
+		self.execute(sql)
+
+	def getDistanceTraveled(self, deviceStr, activityId):
+		deviceId = self.getDeviceId(deviceStr)
 
 	def storeLocation(self, deviceStr, activityId, latitude, longitude, altitude):
 		deviceId = self.getDeviceId(deviceStr)
@@ -83,6 +96,7 @@ class DataListener(threading.Thread):
 		self.db = db
 		self.db.create()
 		self.stop = threading.Event()
+		self.notMetaData = [ "DeviceId", "ActivityId", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy"]
 		super(DataListener, self).__init__()
 
 	def terminate():
@@ -90,6 +104,7 @@ class DataListener(threading.Thread):
 
 	def parseJsonStr(self, str):
 		try:
+			# Parse the location data
 			decoder = json.JSONDecoder()
 			decodedObj = json.loads(str)
 			deviceId = decodedObj["DeviceId"]
@@ -98,6 +113,13 @@ class DataListener(threading.Thread):
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
 			self.db.storeLocation(deviceId, activityId, lat, lon, alt)
+
+			# Parse the metadata
+			for item in decodedObj.iteritems():
+				key = item[0]
+				value = item[1]
+				if not key in self.notMetaData:
+					self.db.storeMetadata(deviceId, activityId, key, value)
 		except ValueError:
 			print "ValueError in JSON data."
 		except KeyError:
@@ -134,7 +156,10 @@ class FollowMyWorkout(object):
 	def __init__(self, mgr):
 		self.mgr = mgr
 		super(FollowMyWorkout, self).__init__()
-	
+
+	def terminate():
+		self.mgr = NULL
+
 	def index(self):
 		deviceId = self.mgr.db.getDeviceId("E4F90A14-9763-49FD-B4E0-038D50A3D289")
 		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
@@ -169,10 +194,10 @@ class FollowMyWorkout(object):
 			html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
 		
 		html += """
-				zoom: 10
+				zoom: 12
 			};
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
-			
+
 			var flightPlanCoordinates =
 			["""
 
@@ -185,6 +210,20 @@ class FollowMyWorkout(object):
 			"""
 		if len(locations) > 0:
 			html += """
+			var contentString = '<div id="content">'+
+			'<div id="siteNotice">'+
+			'</div>'+
+			'<h1 id="firstHeading" class="firstHeading">Last Known Position</h1>'+
+			'<div id="bodyContent">'+
+			'<p>Foo</p>'+
+			'</div>'+
+			'</div>';
+			
+			var infowindow = new google.maps.InfoWindow
+			({
+				content: contentString
+			});
+			
 			var marker = new google.maps.Marker
 			({
 				position: new google.maps.LatLng("""
@@ -192,6 +231,10 @@ class FollowMyWorkout(object):
 			html += """
 				map: map,
 				title: 'Current Position'
+			});
+			google.maps.event.addListener(marker, 'click', function()
+			{
+				infowindow.open(map,marker);
 			});
 			"""
 
