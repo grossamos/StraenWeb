@@ -1,4 +1,5 @@
 import cherrypy
+import datetime
 import json
 import socket
 import sqlite3
@@ -246,15 +247,22 @@ class FollowMyWorkout(object):
 			'<h1 id="firstHeading" class="firstHeading">Last Known Position</h1>' +
 			'<div id="bodyContent">' +
 			'<p>"""
+			time = self.mgr.db.getLatestMetaData("Time", deviceId)
+			if time != None:
+				html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S')
+				html += "<br>"
 			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
 			if distance != None:
-				html += "Distance = " + str(distance) + "<br>' + '"
+				html += "Distance = {:.2f}<br>' + '".format(distance)
 			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
 			if hr != None:
-				html += "Avg. Heart Rate = " + str(hr) + " bpm<br>' + '"
+				html += "Avg. Heart Rate = {:.2f} bpm<br>' + '".format(hr)
 			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
 			if speed != None:
-				html += "Avg. Speed = " + str(speed) + "<br>' + '"
+				html += "Avg. Speed = {:.2f}<br>' + '".format(speed)
+
+
+
 			html += "'"
 			html += """
 			'</p>' +
