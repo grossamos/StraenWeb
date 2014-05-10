@@ -189,10 +189,8 @@ class FollowMyWorkout(object):
 		self.mgr.listener.stop.set()
 		self.mgr = NULL
 
-	def index(self):
-		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
-		#deviceStr = "18877FE4-49D2-46EE-9BF3-2F5F8A8E798B"
-		deviceId = self.mgr.db.getDeviceId(deviceStr)
+	def user(self, device=None, *args, **kw):
+		deviceId = self.mgr.db.getDeviceId(device)
 		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 		html = """
@@ -314,7 +312,13 @@ class FollowMyWorkout(object):
 """
 		return html
 
+	def index(self):
+		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
+		return self.user(deviceStr)
+
+	user.exposed = True
 	index.exposed = True
+
 
 mgr = DataMgr()
 cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
