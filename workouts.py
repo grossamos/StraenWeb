@@ -125,9 +125,10 @@ class DataListener(threading.Thread):
 
 	def parseJsonStr(self, str):
 		try:
-			# Parse the location data
 			decoder = json.JSONDecoder()
 			decodedObj = json.loads(str)
+
+			# Parse the location data
 			deviceId = decodedObj["DeviceId"]
 			activityId = decodedObj["ActivityId"]
 			lat = decodedObj["Latitude"]
@@ -146,8 +147,8 @@ class DataListener(threading.Thread):
 					self.db.storeMetadata(deviceId, activityId, key, value)
 		except ValueError:
 			print "ValueError in JSON data."
-		except KeyError:
-			print "KeyError in JSON data."
+		except KeyError, e:
+			print "KeyError - reason " + str(e) + "."
 		except:
 			print "Error parsing JSON data."
 
@@ -227,7 +228,7 @@ class FollowMyWorkout(object):
 			};
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
-			var flightPlanCoordinates =
+			var routeCoordinates =
 			[\n"""
 
 		for location in locations:
@@ -252,15 +253,15 @@ class FollowMyWorkout(object):
 			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
 			if distance != None:
 				html += "Distance = {:.2f}<br>' + '".format(distance)
-			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
-			if hr != None:
-				html += "Avg. Heart Rate = {:.2f} bpm<br>' + '".format(hr)
 			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
 			if speed != None:
 				html += "Avg. Speed = {:.2f}<br>' + '".format(speed)
-
-
-
+			speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
+			if speed != None:
+				html += "Moving Speed = {:.2f}<br>' + '".format(speed)
+			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
+			if hr != None:
+				html += "Avg. Heart Rate = {:.2f} bpm<br>' + '".format(hr)
 			html += "'"
 			html += """
 			'</p>' +
@@ -287,16 +288,16 @@ class FollowMyWorkout(object):
 			"""
 
 		html += """
-			var flightPath = new google.maps.Polyline
+			var routePath = new google.maps.Polyline
 			({
-				path: flightPlanCoordinates,
+				path: routeCoordinates,
 				geodesic: true,
 				strokeColor: '#FF0000',
 				strokeOpacity: 1.0,
 				strokeWeight: 2
 			});
 
-			flightPath.setMap(map);
+			routePath.setMap(map);
 		}
 		google.maps.event.addDomListener(window, 'load', initialize);
 	</script>
