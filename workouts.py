@@ -243,7 +243,7 @@ class FollowMyWorkout(object):
 			var contentString = '<div id="content">' +
 			'<div id="siteNotice">' +
 			'</div>' +
-			'<h1 id="firstHeading" class="firstHeading">Last Known Position</h1>' +
+			'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
 			'<div id="bodyContent">' +
 			'<p>"""
 			time = self.mgr.db.getLatestMetaData("Time", deviceId)
@@ -285,6 +285,7 @@ class FollowMyWorkout(object):
 			{
 				infowindow.open(map,marker);
 			});
+			infowindow.open(map,marker);
 			"""
 
 		html += """
