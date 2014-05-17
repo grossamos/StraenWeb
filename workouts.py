@@ -248,14 +248,14 @@ class FollowMyWorkout(object):
 			'<p>"""
 			time = self.mgr.db.getLatestMetaData("Time", deviceId)
 			if time != None:
-				html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S')
+				html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
 				html += "<br>"
 			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
 			if distance != None:
-				html += "Distance = {:.2f}<br>' + '".format(distance)
+				html += "Total Distance = {:.2f}<br>' + '".format(distance)
 			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
 			if speed != None:
-				html += "Avg. Speed = {:.2f}<br>' + '".format(speed)
+				html += "Avg. Speed (Includes Stops) = {:.2f}<br>' + '".format(speed)
 			speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
 			if speed != None:
 				html += "Moving Speed = {:.2f}<br>' + '".format(speed)
