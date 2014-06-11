@@ -1,10 +1,13 @@
 import cherrypy
 import datetime
 import json
+import os
 import socket
 import sqlite3
 import sys
 import threading
+
+MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 class Location(object):
 	def __init__(self):
@@ -122,6 +125,7 @@ class DataListener(threading.Thread):
 
 	def terminate():
 		self.stop.set()
+		sock.close()
 
 	def parseJsonStr(self, str):
 		try:
@@ -181,14 +185,18 @@ class DataMgr(object):
 		self.db = NULL
 		self.listener = NULL
 
-class FollowMyWorkout(object):
+class WorkoutsWeb(object):
 	def __init__(self, mgr):
 		self.mgr = mgr
-		super(FollowMyWorkout, self).__init__()
+		super(WorkoutsWeb, self).__init__()
 
 	def terminate():
 		self.mgr.listener.stop.set()
 		self.mgr = NULL
+
+	def update(self, device=None, *args, **kw):
+		deviceId = self.mgr.db.getDeviceId(device)
+		return ""
 
 	def user(self, device=None, *args, **kw):
 		deviceId = self.mgr.db.getDeviceId(device)
@@ -199,6 +207,8 @@ class FollowMyWorkout(object):
 <html>
 
 <head>
+	<title>Live Tracking</title>
+
 	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 
 	<style type="text/css">
@@ -207,9 +217,17 @@ class FollowMyWorkout(object):
 		#map-canvas { height: 100% }
 	</style>
 
-	<script type="text/javascript"
-		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhsgYoAKyYFhf3JABWflVMNBDi5tPXvZo&sensor=false">
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+	<script type="text/javascript">
+		var processUpdates = function(response){
+		};
+		var checkForUpdates = function(){
+			$.ajax({ url: "update/""" + device + """\", success: processUpdates, dataType: "json" });
+		};
+		setInterval(checkForUpdates, 5000);
 	</script>
+
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhsgYoAKyYFhf3JABWflVMNBDi5tPXvZo&sensor=false"></script>
 
 	<script type="text/javascript">
 		function initialize()
@@ -302,7 +320,7 @@ class FollowMyWorkout(object):
 		}
 		google.maps.event.addDomListener(window, 'load', initialize);
 	</script>
-	
+
 </head>
 
 <body>
@@ -321,7 +339,12 @@ class FollowMyWorkout(object):
 	user.exposed = True
 	index.exposed = True
 
+	config = { '/media':
+		{	'tools.staticdir.on': True,
+			'tools.staticdir.dir': MEDIA_DIR,
+		}
+	}
 
 mgr = DataMgr()
 cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
-cherrypy.quickstart(FollowMyWorkout(mgr))
+cherrypy.quickstart(WorkoutsWeb(mgr))
