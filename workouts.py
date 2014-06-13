@@ -13,7 +13,6 @@ class Location(object):
 	def __init__(self):
 		self.latitude = 0.0
 		self.longitude = 0.0
-		self.altitude = 0.0
 		super(Location, self).__init__()
 
 class Database(object):
@@ -95,14 +94,25 @@ class Database(object):
 
 	def listLocations(self, deviceId, activityId):
 		locations = []
-		sql = "select latitude, longitude, altitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+		sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 		rows = self.execute(sql)
 		if rows != None:
 			for row in rows:
 				location = Location()
 				location.latitude = row[0]
 				location.longitude = row[1]
-				location.altitude = row[2]
+				locations.append(location)
+		return locations
+
+	def listLastLocations(self, deviceId, activityId, num):
+		locations = []
+		sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
+		rows = self.execute(sql)
+		if rows != None:
+			for row in rows:
+				location = Location()
+				location.latitude = row[0]
+				location.longitude = row[1]
 				locations.append(location)
 		return locations
 
@@ -194,15 +204,30 @@ class WorkoutsWeb(object):
 		self.mgr.listener.stop.set()
 		self.mgr = NULL
 
-	def update(self, device=None, *args, **kw):
-		deviceId = self.mgr.db.getDeviceId(device)
+	def update(self, device=None, num=None, *args, **kw):
+		if device is None:
+			return
+		if num is None:
+			return
+
+		try:
+			deviceId = self.mgr.db.getDeviceId(device)
+			locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
+
+			html = ""
+			for i in range(num, len(locations) - 1):
+				html += json.dumps({"latitude":locations[i].latitude, "longitude":locations[i].longitude})
+			return html
+		except:
+			return ""
 		return ""
 
 	def user(self, device=None, *args, **kw):
-		deviceId = self.mgr.db.getDeviceId(device)
-		locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
+		try:
+			deviceId = self.mgr.db.getDeviceId(device)
+			locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
-		html = """
+			html = """
 <!DOCTYPE html>
 <html>
 
@@ -218,96 +243,93 @@ class WorkoutsWeb(object):
 	</style>
 
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-	<script type="text/javascript">
-		var processUpdates = function(response){
-		};
-		var checkForUpdates = function(){
-			$.ajax({ url: "update/""" + device + """\", success: processUpdates, dataType: "json" });
-		};
-		setInterval(checkForUpdates, 5000);
-	</script>
-
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhsgYoAKyYFhf3JABWflVMNBDi5tPXvZo&sensor=false"></script>
 
 	<script type="text/javascript">
+		var routeCoordinates
+		var contentString
+		var routePath
+
 		function initialize()
 		{
 			var mapOptions =
 			{
 			"""
-		if len(locations) > 0:
-			lastIndex = len(locations) - 1
-			html += "\tcenter: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
-		else:
-			html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
+			if len(locations) > 0:
+				lastIndex = len(locations) - 1
+				html += "\tcenter: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
+			else:
+				html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
 		
-		html += """
+			html += """
 				zoom: 12
 			};
 			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
-			var routeCoordinates =
+			routeCoordinates =
 			[\n"""
 
-		for location in locations:
-			html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
+			for location in locations:
+				html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
 
-		html += """
+			html += """
 			];
 
 			"""
-		if len(locations) > 0:
-			html += """
-			var contentString = '<div id="content">' +
-			'<div id="siteNotice">' +
-			'</div>' +
-			'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
-			'<div id="bodyContent">' +
-			'<p>"""
-			time = self.mgr.db.getLatestMetaData("Time", deviceId)
-			if time != None:
-				html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
-				html += "<br>"
-			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
-			if distance != None:
-				html += "Total Distance = {:.2f}<br>' + '".format(distance)
-			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
-			if speed != None:
-				html += "Avg. Speed (Includes Stops) = {:.2f}<br>' + '".format(speed)
-			speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
-			if speed != None:
-				html += "Moving Speed = {:.2f}<br>' + '".format(speed)
-			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
-			if hr != None:
-				html += "Avg. Heart Rate = {:.2f} bpm<br>' + '".format(hr)
-			html += "'"
-			html += """
-			'</p>' +
-			'</div>' +
-			'</div>';
+			if len(locations) > 0:
+				html += """
+			contentString = '<div id="content">' +
+				'<div id="siteNotice">' +
+				'</div>' +
+				'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
+				'<div id="bodyContent">' +
+				'<p>"""
+				time = self.mgr.db.getLatestMetaData("Time", deviceId)
+				if time != None:
+					html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
+					html += "<br>"
+				distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
+				if distance != None:
+					html += "Total Distance = {:.2f}<br>".format(distance)
+				speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
+				if speed != None:
+					html += "Avg. Speed (Includes Stops) = {:.2f}<br>".format(speed)
+				speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
+				if speed != None:
+					html += "Moving Speed = {:.2f}<br>".format(speed)
+				hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
+				if hr != None:
+					html += "Avg. Heart Rate = {:.2f} bpm<br>".format(hr)
+				html += "'"
+				html += """
+				'</p>' +
+				'</div>' +
+				'</div>';
 
 			var infowindow = new google.maps.InfoWindow
 			({
 				content: contentString
 			});
-			
+
 			var marker = new google.maps.Marker
 			({
 				position: new google.maps.LatLng("""
-			html += str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
-			html += """
+				html += str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
+				html += """
 				map: map,
 				title: 'Current Position'
 			});
+
 			google.maps.event.addListener(marker, 'click', function()
 			{
 				infowindow.open(map,marker);
 			});
+
 			infowindow.open(map,marker);
 			"""
 
-		html += """
-			var routePath = new google.maps.Polyline
+			html += """
+			routePath = new google.maps.Polyline
 			({
 				path: routeCoordinates,
 				geodesic: true,
@@ -318,7 +340,20 @@ class WorkoutsWeb(object):
 
 			routePath.setMap(map);
 		}
+
 		google.maps.event.addDomListener(window, 'load', initialize);
+
+		var processUpdates = function(response){
+		//	var path = routePath.getPath();
+		//	routeCoordinates.push(new google.maps.LatLng(-27.46758, 153.027892));
+		//	routePath.setPath(routeCoordinates);
+		//	routePath.setMap(map);
+		};
+
+		var checkForUpdates = function(){
+			$.ajax({ url: "update/""" + device + """/\" + routeCoordinates.length, success: processUpdates, dataType: "json" });
+		};
+		setInterval(checkForUpdates, 5000);
 	</script>
 
 </head>
@@ -330,12 +365,17 @@ class WorkoutsWeb(object):
 </html>
 
 """
-		return html
+			return html
+		except:
+			return ""
+		
+		return ""
 
 	def index(self):
 		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
 		return self.user(deviceStr)
 
+	update.exposed = True
 	user.exposed = True
 	index.exposed = True
 
