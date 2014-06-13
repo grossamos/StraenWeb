@@ -59,6 +59,13 @@ class Database(object):
 			rows = self.execute(sql)
 		return rows[0][0]
 
+	def GetLatestActivityId(self, deviceId):
+		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+		rows = self.execute(sql)
+		if len(rows) > 0:
+			return rows[0][0]
+		return 0
+
 	def clearMetadata(self, deviceStr):
 		deviceId = self.getDeviceId(deviceStr)
 		sql = "delete from metadata where deviceId = " + str(deviceId)
@@ -80,10 +87,8 @@ class Database(object):
 		return None
 
 	def getLatestMetaData(self, key, deviceId):
-		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
-		rows = self.execute(sql)
-		if len(rows) > 0:
-			activityId = rows[0][0]
+		activityId = self.GetLatestActivityId(deviceId)
+		if activityId > 0:
 			return self.getMetaData(key, deviceId, activityId)
 		return None
 
@@ -118,10 +123,8 @@ class Database(object):
 
 	def listLocationsForLatestActivity(self, deviceId):
 		locations = []
-		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
-		rows = self.execute(sql)
-		if len(rows) > 0:
-			activityId = rows[0][0]
+		activityId = self.GetLatestActivityId(deviceId)
+		if activityId > 0:
 			locations = self.listLocations(deviceId, activityId)
 		return locations
 
@@ -204,28 +207,31 @@ class WorkoutsWeb(object):
 		self.mgr.listener.stop.set()
 		self.mgr = NULL
 
-	def update(self, device=None, num=None, *args, **kw):
-		if device is None:
-			return
+	def update(self, deviceStr=None, activityId=None, num=None, *args, **kw):
+		if deviceStr is None:
+			return ""
+		if activityId is None:
+			return ""
 		if num is None:
-			return
+			return ""
 
 		try:
-			deviceId = self.mgr.db.getDeviceId(device)
+			deviceId = self.mgr.db.getDeviceId(deviceStr)
 			locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
 
 			html = ""
 			for i in range(num, len(locations) - 1):
-				html += json.dumps({"latitude":locations[i].latitude, "longitude":locations[i].longitude})
+				html += json.dumps({"latitude":locations[i].latitude, "longitude":locations[i].longitude}) + "\n"
 			return html
 		except:
 			return ""
 		return ""
 
-	def user(self, device=None, *args, **kw):
+	def user(self, deviceStr=None, *args, **kw):
 		try:
-			deviceId = self.mgr.db.getDeviceId(device)
-			locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
+			deviceId = self.mgr.db.getDeviceId(deviceStr)
+			activityId = self.mgr.db.GetLatestActivityId(deviceId)
+			locations = self.mgr.db.listLocations(deviceId, activityId)
 
 			html = """
 <!DOCTYPE html>
@@ -343,15 +349,26 @@ class WorkoutsWeb(object):
 
 		google.maps.event.addDomListener(window, 'load', initialize);
 
-		var processUpdates = function(response){
-		//	var path = routePath.getPath();
-		//	routeCoordinates.push(new google.maps.LatLng(-27.46758, 153.027892));
-		//	routePath.setPath(routeCoordinates);
-		//	routePath.setMap(map);
+		var processUpdates = function(response)
+		{
+			console.log(response)
+			if (response != null)
+			{
+				lines = response.split("\\n")
+				for (var i = 0; i < lines.length; i++)
+				{
+					var obj = JSON.parse(lines[i]);
+				//	var path = routePath.getPath();
+				//	routeCoordinates.push(new google.maps.LatLng(-27.46758, 153.027892));
+				//	routePath.setPath(routeCoordinates);
+				//	routePath.setMap(map);
+				}
+			}
 		};
 
-		var checkForUpdates = function(){
-			$.ajax({ url: "update/""" + device + """/\" + routeCoordinates.length, success: processUpdates, dataType: "json" });
+		var checkForUpdates = function()
+		{
+			$.ajax({ url: "update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "json" });
 		};
 		setInterval(checkForUpdates, 5000);
 	</script>
