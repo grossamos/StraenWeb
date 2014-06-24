@@ -2,6 +2,7 @@ import cherrypy
 import datetime
 import json
 import os
+import re
 import socket
 import sqlite3
 import sys
@@ -207,6 +208,8 @@ class WorkoutsWeb(object):
 		self.mgr.listener.stop.set()
 		self.mgr = NULL
 
+	@cherrypy.tools.json_out()
+	@cherrypy.expose
 	def update(self, deviceStr=None, activityId=None, num=None, *args, **kw):
 		if deviceStr is None:
 			return ""
@@ -214,25 +217,34 @@ class WorkoutsWeb(object):
 			return ""
 		if num is None:
 			return ""
-
+		
 		try:
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
-			locations = self.mgr.db.listLocationsForLatestActivity(deviceId)
+			locations = listLastLocations(deviceId, activityId, num)
 
-			html = ""
-			for i in range(num, len(locations) - 1):
-				html += json.dumps({"latitude":locations[i].latitude, "longitude":locations[i].longitude}) + "\n"
-			return html
+			cherrypy.response.headers['Content-Type'] = 'application/json'
+
+			response = "["
+
+			for location in locations:
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"latitude":location.latitude, "longitude":location.longitude})
+
+			response += "]"
+
+			return response
 		except:
 			return ""
 		return ""
 
+	@cherrypy.expose
 	def user(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
 			activityId = self.mgr.db.GetLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
-
+			
 			html = """
 <!DOCTYPE html>
 <html>
@@ -280,7 +292,6 @@ class WorkoutsWeb(object):
 
 			html += """
 			];
-
 			"""
 			if len(locations) > 0:
 				html += """
@@ -351,26 +362,30 @@ class WorkoutsWeb(object):
 
 		var processUpdates = function(response)
 		{
-			console.log(response)
 			if (response != null)
 			{
-				lines = response.split("\\n")
-				for (var i = 0; i < lines.length; i++)
+				var temp = JSON.parse(response);
+				var objList = JSON.parse(temp);
+				for (var i = 0; i < objList.length; ++i)
 				{
-					var obj = JSON.parse(lines[i]);
-				//	var path = routePath.getPath();
-				//	routeCoordinates.push(new google.maps.LatLng(-27.46758, 153.027892));
-				//	routePath.setPath(routeCoordinates);
-				//	routePath.setMap(map);
+					console.log(objList[i].latitude)
+					if (routePath != null)
+					{
+						console.log(objList[i].latitude)
+						var path = routePath.getPath();
+						routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
+						routePath.setPath(routeCoordinates);
+						routePath.setMap(map);
+					}
 				}
 			}
 		};
 
 		var checkForUpdates = function()
 		{
-			$.ajax({ url: "update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "json" });
+			$.ajax({ type: 'POST', url: "update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "application/json" });
 		};
-		setInterval(checkForUpdates, 5000);
+		setInterval(checkForUpdates, 15000);
 	</script>
 
 </head>
@@ -388,13 +403,10 @@ class WorkoutsWeb(object):
 		
 		return ""
 
+	@cherrypy.expose
 	def index(self):
 		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
 		return self.user(deviceStr)
-
-	update.exposed = True
-	user.exposed = True
-	index.exposed = True
 
 	config = { '/media':
 		{	'tools.staticdir.on': True,
