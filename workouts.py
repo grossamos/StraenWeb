@@ -362,21 +362,29 @@ class WorkoutsWeb(object):
 
 		var processUpdates = function(response)
 		{
-			if (response != null)
+			if (response == null)
+				return;
+			if (response.length < 3)
+				return;
+
+			var temp = JSON.parse(response);
+			if (temp == null)
+				return;
+
+			var objList = JSON.parse(temp);
+			if (objList == null)
+				return;
+
+			for (var i = 0; i < objList.length; ++i)
 			{
-				var temp = JSON.parse(response);
-				var objList = JSON.parse(temp);
-				for (var i = 0; i < objList.length; ++i)
+				console.log(objList[i].latitude)
+				if (routePath != null)
 				{
 					console.log(objList[i].latitude)
-					if (routePath != null)
-					{
-						console.log(objList[i].latitude)
-						var path = routePath.getPath();
-						routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
-						routePath.setPath(routeCoordinates);
-						routePath.setMap(map);
-					}
+					var path = routePath.getPath();
+					routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
+					routePath.setPath(routeCoordinates);
+					routePath.setMap(map);
 				}
 			}
 		};
