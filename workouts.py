@@ -60,7 +60,7 @@ class Database(object):
 			rows = self.execute(sql)
 		return rows[0][0]
 
-	def GetLatestActivityId(self, deviceId):
+	def getLatestActivityId(self, deviceId):
 		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
 		rows = self.execute(sql)
 		if len(rows) > 0:
@@ -88,7 +88,7 @@ class Database(object):
 		return None
 
 	def getLatestMetaData(self, key, deviceId):
-		activityId = self.GetLatestActivityId(deviceId)
+		activityId = self.getLatestActivityId(deviceId)
 		if activityId > 0:
 			return self.getMetaData(key, deviceId, activityId)
 		return None
@@ -124,7 +124,7 @@ class Database(object):
 
 	def listLocationsForLatestActivity(self, deviceId):
 		locations = []
-		activityId = self.GetLatestActivityId(deviceId)
+		activityId = self.getLatestActivityId(deviceId)
 		if activityId > 0:
 			locations = self.listLocations(deviceId, activityId)
 		return locations
@@ -242,7 +242,7 @@ class WorkoutsWeb(object):
 	def user(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
-			activityId = self.mgr.db.GetLatestActivityId(deviceId)
+			activityId = self.mgr.db.getLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
 			
 			html = """
