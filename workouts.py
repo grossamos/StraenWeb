@@ -220,7 +220,7 @@ class WorkoutsWeb(object):
 		
 		try:
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
-			locations = listLastLocations(deviceId, activityId, num)
+			locations = self.mgr.db.listLastLocations(deviceId, activityId, num)
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 
@@ -232,6 +232,7 @@ class WorkoutsWeb(object):
 				response += json.dumps({"latitude":location.latitude, "longitude":location.longitude})
 
 			response += "]"
+			print response
 
 			return response
 		except:
@@ -267,6 +268,7 @@ class WorkoutsWeb(object):
 		var routeCoordinates
 		var contentString
 		var routePath
+		var map
 
 		function initialize()
 		{
@@ -282,7 +284,7 @@ class WorkoutsWeb(object):
 			html += """
 				zoom: 12
 			};
-			var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+			map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
 			routeCoordinates =
 			[\n"""
@@ -377,10 +379,8 @@ class WorkoutsWeb(object):
 
 			for (var i = 0; i < objList.length; ++i)
 			{
-				console.log(objList[i].latitude)
 				if (routePath != null)
 				{
-					console.log(objList[i].latitude)
 					var path = routePath.getPath();
 					routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
 					routePath.setPath(routeCoordinates);
