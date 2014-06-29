@@ -391,7 +391,7 @@ class WorkoutsWeb(object):
 
 		var checkForUpdates = function()
 		{
-			$.ajax({ type: 'POST', url: "update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "application/json" });
+			$.ajax({ type: 'POST', url: "/update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "application/json" });
 		};
 		setInterval(checkForUpdates, 15000);
 	</script>
