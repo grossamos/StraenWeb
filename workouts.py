@@ -112,14 +112,20 @@ class Database(object):
 
 	def listLastLocations(self, deviceId, activityId, num):
 		locations = []
-		sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
+		sql = "select count(*) from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 		rows = self.execute(sql)
 		if rows != None:
-			for row in rows:
-				location = Location()
-				location.latitude = row[0]
-				location.longitude = row[1]
-				locations.append(location)
+			rowCount = int(rows[0][0])
+			newRows = rowCount - num
+			if newRows > 0:
+				sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
+				rows = self.execute(sql)
+				if rows != None:
+					for row in rows:
+						location = Location()
+						location.latitude = row[0]
+						location.longitude = row[1]
+						locations.append(location)
 		return locations
 
 	def listLocationsForLatestActivity(self, deviceId):
@@ -210,7 +216,7 @@ class WorkoutsWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def update(self, deviceStr=None, activityId=None, num=None, *args, **kw):
+	def updatetrack(self, deviceStr=None, activityId=None, num=None, *args, **kw):
 		if deviceStr is None:
 			return ""
 		if activityId is None:
@@ -220,10 +226,9 @@ class WorkoutsWeb(object):
 		
 		try:
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
-			locations = self.mgr.db.listLastLocations(deviceId, activityId, num)
+			locations = self.mgr.db.listLastLocations(deviceId, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
-
 			response = "["
 
 			for location in locations:
@@ -232,10 +237,70 @@ class WorkoutsWeb(object):
 				response += json.dumps({"latitude":location.latitude, "longitude":location.longitude})
 
 			response += "]"
-			print response
 
 			return response
 		except:
+			print "Unexpected error:", sys.exc_info()[0]
+			return ""
+		return ""
+
+	@cherrypy.tools.json_out()
+	@cherrypy.expose
+	def updatemetadata(self, deviceStr=None, activityId=None, *args, **kw):
+		if deviceStr is None:
+			return ""
+		if activityId is None:
+			return ""
+
+		try:
+			deviceId = self.mgr.db.getDeviceId(deviceStr)
+
+			cherrypy.response.headers['Content-Type'] = 'application/json'
+			response = "["
+
+			key = "Time"
+			time = self.mgr.db.getLatestMetaData(key, deviceId)
+			if time != None:
+				valueStr = datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
+				response += json.dumps({"name":key, "value":valueStr})
+
+			key = "Distance"
+			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
+			if distance != None:
+				valueStr = "{:.2f}".format(distance)
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":key, "value":valueStr})
+
+			key = "Avg. Speed"
+			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
+			if speed != None:
+				valueStr = "{:.2f}".format(speed)
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":key, "value":valueStr})
+
+			key = "Moving Speed"
+			speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
+			if speed != None:
+				valueStr = "{:.2f}".format(speed)
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":key, "value":valueStr})
+
+			key = "Avg. Heart Rate"
+			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
+			if hr != None:
+				valueStr = "{:.2f} bpm".format(hr)
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":key, "value":valueStr})
+
+			response += "]"
+			
+			return response
+		except:
+			print "Unexpected error:", sys.exc_info()[0]
 			return ""
 		return ""
 
@@ -245,7 +310,7 @@ class WorkoutsWeb(object):
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
 			activityId = self.mgr.db.getLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
-			
+
 			html = """
 <!DOCTYPE html>
 <html>
@@ -269,6 +334,8 @@ class WorkoutsWeb(object):
 		var contentString
 		var routePath
 		var map
+		var lastLat
+		var lastLon
 
 		function initialize()
 		{
@@ -280,7 +347,6 @@ class WorkoutsWeb(object):
 				html += "\tcenter: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
 			else:
 				html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
-		
 			html += """
 				zoom: 12
 			};
@@ -288,13 +354,14 @@ class WorkoutsWeb(object):
 
 			routeCoordinates =
 			[\n"""
-
 			for location in locations:
 				html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
-
 			html += """
-			];
-			"""
+			];\n
+
+			lastLat = """ + str(locations[lastIndex].latitude) + """;
+			lastLon = """ + str(locations[lastIndex].longitude) + """;\n"""
+
 			if len(locations) > 0:
 				html += """
 			contentString = '<div id="content">' +
@@ -332,9 +399,7 @@ class WorkoutsWeb(object):
 
 			var marker = new google.maps.Marker
 			({
-				position: new google.maps.LatLng("""
-				html += str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
-				html += """
+				position: new google.maps.LatLng(lastLat, lastLon),
 				map: map,
 				title: 'Current Position'
 			});
@@ -362,7 +427,38 @@ class WorkoutsWeb(object):
 
 		google.maps.event.addDomListener(window, 'load', initialize);
 
-		var processUpdates = function(response)
+		var appendToTrack = function(response)
+		{
+			if (response == null)
+				return;
+			if (response.length < 3)
+				return;
+			if (routePath == null)
+				return;
+
+			var temp = JSON.parse(response);
+			if (temp == null)
+				return;
+
+			var objList = JSON.parse(temp);
+			if (objList == null)
+				return;
+			if (objList.length == 0)
+				return;
+
+			for (var i = 0; i < objList.length; ++i)
+			{
+				var path = routePath.getPath();
+				routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
+				routePath.setPath(routeCoordinates);
+				routePath.setMap(map);
+			}
+
+			lastLat = objList[objList.length - 1].latitude;
+			lastLon = objList[objList.length - 1].longitude;
+		};
+
+		var updateMetadata = function(response)
 		{
 			if (response == null)
 				return;
@@ -377,21 +473,46 @@ class WorkoutsWeb(object):
 			if (objList == null)
 				return;
 
+			contentString = '<div id="content">' +
+				'<div id="siteNotice">' +
+				'</div>' +
+				'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
+				'<div id="bodyContent">' +
+				'<p>'
 			for (var i = 0; i < objList.length; ++i)
 			{
-				if (routePath != null)
-				{
-					var path = routePath.getPath();
-					routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
-					routePath.setPath(routeCoordinates);
-					routePath.setMap(map);
-				}
+				contentString += objList[i].name;
+				contentString += " = ";
+				contentString += objList[i].value;
+				contentString += "<br>";
 			}
+			contentString +=
+				'</p>' +
+				'</div>' +
+				'</div>';
+
+			var infowindow = new google.maps.InfoWindow
+			({
+				content: contentString
+			});
+
+			var marker = new google.maps.Marker
+			({
+				position: new google.maps.LatLng(lastLat, lastLon),
+				map: map,
+				title: 'Current Position'
+			});
+
+			google.maps.event.addListener(marker, 'click', function()
+			{
+				infowindow.open(map,marker);
+			});
 		};
 
 		var checkForUpdates = function()
 		{
-			$.ajax({ type: 'POST', url: "/update/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: processUpdates, dataType: "application/json" });
+			$.ajax({ type: 'POST', url: "/updatetrack/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: appendToTrack, dataType: "application/json" });
+			$.ajax({ type: 'POST', url: "/updatemetadata/""" + deviceStr + "/" + str(activityId) + """/\", success: updateMetadata, dataType: "application/json" });
 		};
 		setInterval(checkForUpdates, 15000);
 	</script>
@@ -407,6 +528,7 @@ class WorkoutsWeb(object):
 """
 			return html
 		except:
+			print "Unexpected error:", sys.exc_info()[0]
 			return ""
 		
 		return ""
