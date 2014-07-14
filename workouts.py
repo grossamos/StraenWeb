@@ -8,6 +8,8 @@ import sqlite3
 import sys
 import threading
 
+from dateutil.tz import tzlocal
+
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 class Location(object):
@@ -261,7 +263,8 @@ class WorkoutsWeb(object):
 			key = "Time"
 			time = self.mgr.db.getLatestMetaData(key, deviceId)
 			if time != None:
-				valueStr = datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
+				localtimezone = tzlocal()
+				valueStr += datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				response += json.dumps({"name":key, "value":valueStr})
 
 			key = "Distance"
@@ -297,7 +300,7 @@ class WorkoutsWeb(object):
 				response += json.dumps({"name":key, "value":valueStr})
 
 			response += "]"
-			
+
 			return response
 		except:
 			print "Unexpected error:", sys.exc_info()[0]
@@ -334,6 +337,8 @@ class WorkoutsWeb(object):
 		var contentString
 		var routePath
 		var map
+		var marker = null
+		var infoWindow = null
 		var lastLat
 		var lastLon
 
@@ -360,59 +365,8 @@ class WorkoutsWeb(object):
 			];\n
 
 			lastLat = """ + str(locations[lastIndex].latitude) + """;
-			lastLon = """ + str(locations[lastIndex].longitude) + """;\n"""
+			lastLon = """ + str(locations[lastIndex].longitude) + """;\n
 
-			if len(locations) > 0:
-				html += """
-			contentString = '<div id="content">' +
-				'<div id="siteNotice">' +
-				'</div>' +
-				'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
-				'<div id="bodyContent">' +
-				'<p>"""
-				time = self.mgr.db.getLatestMetaData("Time", deviceId)
-				if time != None:
-					html += datetime.datetime.fromtimestamp(time/1000).strftime('%Y-%m-%d %H:%M:%S %Z')
-					html += "<br>"
-				distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
-				if distance != None:
-					html += "Total Distance = {:.2f}<br>".format(distance)
-				speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
-				if speed != None:
-					html += "Avg. Speed (Includes Stops) = {:.2f}<br>".format(speed)
-				speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
-				if speed != None:
-					html += "Moving Speed = {:.2f}<br>".format(speed)
-				hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
-				if hr != None:
-					html += "Avg. Heart Rate = {:.2f} bpm<br>".format(hr)
-				html += "'"
-				html += """
-				'</p>' +
-				'</div>' +
-				'</div>';
-
-			var infowindow = new google.maps.InfoWindow
-			({
-				content: contentString
-			});
-
-			var marker = new google.maps.Marker
-			({
-				position: new google.maps.LatLng(lastLat, lastLon),
-				map: map,
-				title: 'Current Position'
-			});
-
-			google.maps.event.addListener(marker, 'click', function()
-			{
-				infowindow.open(map,marker);
-			});
-
-			infowindow.open(map,marker);
-			"""
-
-			html += """
 			routePath = new google.maps.Polyline
 			({
 				path: routeCoordinates,
@@ -490,13 +444,18 @@ class WorkoutsWeb(object):
 				'</p>' +
 				'</div>' +
 				'</div>';
+				
+			if (infoWindow)
+				infoWindow.close();
+			if (marker)
+				marker.setMap(null);
 
-			var infowindow = new google.maps.InfoWindow
+			infoWindow = new google.maps.InfoWindow
 			({
 				content: contentString
 			});
 
-			var marker = new google.maps.Marker
+			marker = new google.maps.Marker
 			({
 				position: new google.maps.LatLng(lastLat, lastLon),
 				map: map,
@@ -505,8 +464,10 @@ class WorkoutsWeb(object):
 
 			google.maps.event.addListener(marker, 'click', function()
 			{
-				infowindow.open(map,marker);
+				infoWindow.open(map,marker);
 			});
+
+			infoWindow.open(map,marker);
 		};
 
 		var checkForUpdates = function()
@@ -514,6 +475,9 @@ class WorkoutsWeb(object):
 			$.ajax({ type: 'POST', url: "/updatetrack/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: appendToTrack, dataType: "application/json" });
 			$.ajax({ type: 'POST', url: "/updatemetadata/""" + deviceStr + "/" + str(activityId) + """/\", success: updateMetadata, dataType: "application/json" });
 		};
+
+		$.ajax({ type: 'POST', url: "/updatemetadata/""" + deviceStr + "/" + str(activityId) + """/\", success: updateMetadata, dataType: "application/json" });
+
 		setInterval(checkForUpdates, 15000);
 	</script>
 
@@ -532,6 +496,10 @@ class WorkoutsWeb(object):
 			return ""
 		
 		return ""
+
+	@cherrypy.expose
+	def login(self):
+		pass
 
 	@cherrypy.expose
 	def index(self):
