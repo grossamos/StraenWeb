@@ -446,9 +446,15 @@ class WorkoutsWeb(object):
 				'</div>';
 				
 			if (infoWindow)
+			{
 				infoWindow.close();
+				infoWindow = null;
+			}
 			if (marker)
+			{
 				marker.setMap(null);
+				mark = null;
+			}
 
 			infoWindow = new google.maps.InfoWindow
 			({
