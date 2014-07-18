@@ -1,14 +1,19 @@
 import cherrypy
 import datetime
 import json
+import mako
 import os
 import re
 import socket
 import sqlite3
 import sys
 import threading
+import traceback
 
 from dateutil.tz import tzlocal
+from cherrypy import tools
+from mako.lookup import TemplateLookup
+from mako.template import Template
 
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
@@ -43,20 +48,35 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table device (id integer primary key, device text)")
-		except:
-			pass
-
-		try:
 			self.execute("create table metadata (id integer primary key, deviceId integer, activityId integer, key text, value double)")
 		except:
 			pass
 
+		try:
+			self.execute("create table user (id integer primary key, username text, password text)")
+		except:
+			pass
+
+		try:
+			self.execute("create table follower (id integer primary key, userId integer, followerId integer)")
+		except:
+			pass
+
+		try:
+			self.execute("create table device (id integer primary key, device text, userId integer)")
+		except:
+			pass
+
+		try:
+			self.execute("create table broadcast_name (id integer primary key, deviceId integer, name text)")
+		except:
+			pass
+	
 	def getDeviceId(self, deviceStr):
 		sql = "select id from device where device = '" + deviceStr + "'"
 		rows = self.execute(sql)
 		if len(rows) == 0:
-			sql = "insert into device values(NULL, '" + deviceStr + "')"
+			sql = "insert into device values(NULL, '" + deviceStr + "', 0)"
 			rows = self.execute(sql)
 			sql = "select id from device where device = '" + deviceStr + "'"
 			rows = self.execute(sql)
@@ -79,12 +99,24 @@ class Database(object):
 		sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
 		self.execute(sql)
 
+	def storeBroadcastName(self, deviceStr, name):
+		deviceId = self.getDeviceId(deviceStr)
+		sql = "insert into broadcast_name values(NULL, " + str(deviceId) + ", '" + str(name) + "')"
+		self.execute(sql)
+
 	def getMetaData(self, key, deviceId, activityId):
 		try:
 			sql = "select value from metadata where key = '" + key + "' and deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " limit 1"
 			rows = self.execute(sql)
 			if rows != None:
 				return rows[0][0]
+		except:
+			pass
+		return None
+
+	def getBroadcastName(self):
+		try:
+			pass
 		except:
 			pass
 		return None
@@ -142,7 +174,7 @@ class DataListener(threading.Thread):
 		self.db = db
 		self.db.create()
 		self.stop = threading.Event()
-		self.notMetaData = [ "DeviceId", "ActivityId", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy"]
+		self.notMetaData = [ "DeviceId", "ActivityId", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
 	def terminate():
@@ -182,7 +214,7 @@ class DataListener(threading.Thread):
 		while not self.stop.is_set():
 			data, addr = sock.recvfrom(1024)
 			return data
-		return ""
+		return None
 
 	def run(self):
 		UDP_IP = ""
@@ -242,6 +274,8 @@ class WorkoutsWeb(object):
 
 			return response
 		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
 			print "Unexpected error:", sys.exc_info()[0]
 			return ""
 		return ""
@@ -264,7 +298,7 @@ class WorkoutsWeb(object):
 			time = self.mgr.db.getLatestMetaData(key, deviceId)
 			if time != None:
 				localtimezone = tzlocal()
-				valueStr += datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
+				valueStr = datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				response += json.dumps({"name":key, "value":valueStr})
 
 			key = "Distance"
@@ -303,6 +337,8 @@ class WorkoutsWeb(object):
 
 			return response
 		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
 			print "Unexpected error:", sys.exc_info()[0]
 			return ""
 		return ""
@@ -313,199 +349,40 @@ class WorkoutsWeb(object):
 			deviceId = self.mgr.db.getDeviceId(deviceStr)
 			activityId = self.mgr.db.getLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
+			route = ""
+			centerLat = 0
+			centerLon = 0
 
-			html = """
-<!DOCTYPE html>
-<html>
-
-<head>
-	<title>Live Tracking</title>
-
-	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-
-	<style type="text/css">
-		html { height: 100% }
-		body { height: 100%; margin: 0; padding: 0 }
-		#map-canvas { height: 100% }
-	</style>
-
-	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhsgYoAKyYFhf3JABWflVMNBDi5tPXvZo&sensor=false"></script>
-
-	<script type="text/javascript">
-		var routeCoordinates
-		var contentString
-		var routePath
-		var map
-		var marker = null
-		var infoWindow = null
-		var lastLat
-		var lastLon
-
-		function initialize()
-		{
-			var mapOptions =
-			{
-			"""
-			if len(locations) > 0:
-				lastIndex = len(locations) - 1
-				html += "\tcenter: new google.maps.LatLng(" + str(locations[lastIndex].latitude) + ", " + str(locations[lastIndex].longitude) + "),"
-			else:
-				html += "\tcenter: new google.maps.LatLng(0.0, 0.0),"
-			html += """
-				zoom: 12
-			};
-			map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
-
-			routeCoordinates =
-			[\n"""
 			for location in locations:
-				html += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
-			html += """
-			];\n
+				route += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
 
-			lastLat = """ + str(locations[lastIndex].latitude) + """;
-			lastLon = """ + str(locations[lastIndex].longitude) + """;\n
+			if len(locations) > 0:
+				centerLat = locations[0].latitude
+				centerLon = locations[0].longitude
 
-			routePath = new google.maps.Polyline
-			({
-				path: routeCoordinates,
-				geodesic: true,
-				strokeColor: '#FF0000',
-				strokeOpacity: 1.0,
-				strokeWeight: 2
-			});
-
-			routePath.setMap(map);
-		}
-
-		google.maps.event.addDomListener(window, 'load', initialize);
-
-		var appendToTrack = function(response)
-		{
-			if (response == null)
-				return;
-			if (response.length < 3)
-				return;
-			if (routePath == null)
-				return;
-
-			var temp = JSON.parse(response);
-			if (temp == null)
-				return;
-
-			var objList = JSON.parse(temp);
-			if (objList == null)
-				return;
-			if (objList.length == 0)
-				return;
-
-			for (var i = 0; i < objList.length; ++i)
-			{
-				var path = routePath.getPath();
-				routeCoordinates.push(new google.maps.LatLng(objList[i].latitude, objList[i].longitude));
-				routePath.setPath(routeCoordinates);
-				routePath.setMap(map);
-			}
-
-			lastLat = objList[objList.length - 1].latitude;
-			lastLon = objList[objList.length - 1].longitude;
-		};
-
-		var updateMetadata = function(response)
-		{
-			if (response == null)
-				return;
-			if (response.length < 3)
-				return;
-
-			var temp = JSON.parse(response);
-			if (temp == null)
-				return;
-
-			var objList = JSON.parse(temp);
-			if (objList == null)
-				return;
-
-			contentString = '<div id="content">' +
-				'<div id="siteNotice">' +
-				'</div>' +
-				'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
-				'<div id="bodyContent">' +
-				'<p>'
-			for (var i = 0; i < objList.length; ++i)
-			{
-				contentString += objList[i].name;
-				contentString += " = ";
-				contentString += objList[i].value;
-				contentString += "<br>";
-			}
-			contentString +=
-				'</p>' +
-				'</div>' +
-				'</div>';
-				
-			if (infoWindow)
-			{
-				infoWindow.close();
-				infoWindow = null;
-			}
-			if (marker)
-			{
-				marker.setMap(null);
-				mark = null;
-			}
-
-			infoWindow = new google.maps.InfoWindow
-			({
-				content: contentString
-			});
-
-			marker = new google.maps.Marker
-			({
-				position: new google.maps.LatLng(lastLat, lastLon),
-				map: map,
-				title: 'Current Position'
-			});
-
-			google.maps.event.addListener(marker, 'click', function()
-			{
-				infoWindow.open(map,marker);
-			});
-
-			infoWindow.open(map,marker);
-		};
-
-		var checkForUpdates = function()
-		{
-			$.ajax({ type: 'POST', url: "/updatetrack/""" + deviceStr + "/" + str(activityId) + """/\" + routeCoordinates.length, success: appendToTrack, dataType: "application/json" });
-			$.ajax({ type: 'POST', url: "/updatemetadata/""" + deviceStr + "/" + str(activityId) + """/\", success: updateMetadata, dataType: "application/json" });
-		};
-
-		$.ajax({ type: 'POST', url: "/updatemetadata/""" + deviceStr + "/" + str(activityId) + """/\", success: updateMetadata, dataType: "application/json" });
-
-		setInterval(checkForUpdates, 15000);
-	</script>
-
-</head>
-
-<body>
-	<div id="map-canvas"/>
-</body>
-
-</html>
-
-"""
-			return html
+			myTemplate = Template(filename='map.html', module_directory='tempmod')
+			return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
 		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
 			print "Unexpected error:", sys.exc_info()[0]
 			return ""
-		
 		return ""
 
 	@cherrypy.expose
 	def login(self):
-		pass
+		myTemplate = Template(filename='login.html', module_directory='tempmod')
+		return myTemplate.render()
+
+	@cherrypy.expose
+	def about(self):
+		myTemplate = Template(filename='about.html', module_directory='tempmod')
+		return myTemplate.render()
+
+	@cherrypy.expose
+	def followers(self):
+		myTemplate = Template(filename='followers.html', module_directory='tempmod')
+		return myTemplate.render()
 
 	@cherrypy.expose
 	def index(self):
@@ -518,6 +395,10 @@ class WorkoutsWeb(object):
 		}
 	}
 
+mako.collection_size = 100
+mako.directories = "templates"
+
 mgr = DataMgr()
 cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
+cherrypy.engine.signals.subscribe()
 cherrypy.quickstart(WorkoutsWeb(mgr))
