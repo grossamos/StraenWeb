@@ -22,5 +22,8 @@ build/
 # Backup files
 *~.nib
 
-# Miko template files
-tempmod\*
+# sqlite database
+*.sqlite
+
+# Mako template files
+tempmod/*

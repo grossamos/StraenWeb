@@ -2,21 +2,31 @@
 <html>
 
 <head>
-<title>Live Tracking</title>
+	<title>Workouts - Login</title>
+	<link rel="stylesheet" href="normalize.css">
+	<link rel="stylesheet" href="style.css">
 </head>
 
 <link rel="shortcut icon" href="favicon.ico" >
 
-<style type="text/css">
-@import "site.css";
-</style>
-
 <body>
-<form method="post" action="/auth/login">
-<input type="hidden" />
-Enter login information<br />
-Username: <input type="text" name="username" value="" /><br />
-Password: <input type="password" name="password" /><br />
-<input type="submit" value="Log In" />
+	<section class="loginform cf">
+		<form name="login" action="index_submit" method="get" accept-charset="utf-8">
+			<ul>
+				<li>
+					<label for="usermail">Email</label>
+					<input type="email" name="usermail" placeholder="yourname@email.com" required>
+				</li>
+				<li>
+					<label for="password">Password</label>
+					<input type="password" name="password" placeholder="password" required>
+				</li>
+				<li>
+					<input type="submit" value="Login">
+				</li>
+			</ul>
+		</form>
+	</section>
 </body>
+
 </html>
