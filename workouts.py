@@ -69,11 +69,6 @@ class Database(object):
 			self.execute("create table device (id integer primary key, device text, userId integer)")
 		except:
 			pass
-
-		try:
-			self.execute("create table broadcast_name (id integer primary key, deviceId integer, name text)")
-		except:
-			pass
 	
 	def storeUser(self, username, hash):
 		sql = "insert into user values(NULL, '" + username + "', '" + hash + "')"
@@ -113,24 +108,12 @@ class Database(object):
 		sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
 		self.execute(sql)
 
-	def storeBroadcastName(self, deviceStr, name):
-		deviceId = self.getDeviceId(deviceStr)
-		sql = "insert into broadcast_name values(NULL, " + str(deviceId) + ", '" + str(name) + "')"
-		self.execute(sql)
-
 	def getMetaData(self, key, deviceId, activityId):
 		try:
 			sql = "select value from metadata where key = '" + key + "' and deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " limit 1"
 			rows = self.execute(sql)
 			if rows != None:
 				return rows[0][0]
-		except:
-			pass
-		return None
-
-	def getBroadcastName(self):
-		try:
-			pass
 		except:
 			pass
 		return None
