@@ -9,12 +9,15 @@ import sqlite3
 import sys
 import threading
 import traceback
+import bcrypt
 
 from dateutil.tz import tzlocal
 from cherrypy import tools
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
+CSS_DIR = os.path.join(os.path.abspath("."), u"css")
+IMAGES_DIR = os.path.join(os.path.abspath("."), u"images")
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 class Location(object):
@@ -53,7 +56,7 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table user (id integer primary key, username text, password text)")
+			self.execute("create table user (id integer primary key, username text, hash text)")
 		except:
 			pass
 
@@ -72,6 +75,17 @@ class Database(object):
 		except:
 			pass
 	
+	def storeUser(self, username, hash):
+		sql = "insert into user values(NULL, '" + username + "', '" + hash + "')"
+		self.execute(sql)
+
+	def getUserHash(self, username):
+		sql = "select has from user where username = '" + username + "'"
+		rows = self.execute(sql)
+		if len(rows) == 0:
+			return rows[0][0]
+		return 0
+
 	def getDeviceId(self, deviceStr):
 		sql = "select id from device where device = '" + deviceStr + "'"
 		rows = self.execute(sql)
@@ -239,6 +253,29 @@ class DataMgr(object):
 		self.db = NULL
 		self.listener = NULL
 
+	def authenticateUser(username, password):
+		if len(username) == 0:
+			return False
+		if len(password) < 8:
+			return False
+
+		dbHash = self.db.getUserHash(username)
+		return (dbHash == bcrypt.hashpw(password, dbHash))
+
+	def createUser(self, username, password1, password2):
+		if len(username) == 0:
+			return False
+		if len(password1) < 8:
+			return False
+		if password1 != password2:
+			return False
+		if self.db.getUserHash(username) != 0:
+			return False
+
+		salt = bcrypt.gensalt()
+		hash = bcrypt.hashpw(password1, salt)
+		self.db.storeUser(username, hash)
+
 class WorkoutsWeb(object):
 	def __init__(self, mgr):
 		self.mgr = mgr
@@ -370,8 +407,21 @@ class WorkoutsWeb(object):
 		return ""
 
 	@cherrypy.expose
+	def login_submit(self, username, password):
+		self.mgr.authenticateUser(username, password)
+
+	@cherrypy.expose
+	def create_login_submit(self, username, password1, password2):
+		self.mgr.createUser(username, password1, password2)
+
+	@cherrypy.expose
 	def login(self):
 		myTemplate = Template(filename='login.html', module_directory='tempmod')
+		return myTemplate.render()
+
+	@cherrypy.expose
+	def create_login(self):
+		myTemplate = Template(filename='create_login.html', module_directory='tempmod')
 		return myTemplate.render()
 
 	@cherrypy.expose
@@ -389,16 +439,36 @@ class WorkoutsWeb(object):
 		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
 		return self.user(deviceStr)
 
-	config = { '/media':
-		{	'tools.staticdir.on': True,
-			'tools.staticdir.dir': MEDIA_DIR,
-		}
-	}
 
 mako.collection_size = 100
 mako.directories = "templates"
 
 mgr = DataMgr()
+
+conf = {
+	'/':
+	{
+		'tools.staticdir.root': os.path.dirname(os.path.abspath(__file__))},
+
+		'/css':
+		{
+			'tools.staticdir.on': True,
+			'tools.staticdir.dir': CSS_DIR
+		},
+
+		'/images':
+		{
+			'tools.staticdir.on': True,
+			'tools.staticdir.dir': IMAGES_DIR,
+		},
+
+		'/media':
+		{
+			'tools.staticdir.on': True,
+			'tools.staticdir.dir': MEDIA_DIR,
+		}
+}
+
 cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
 cherrypy.engine.signals.subscribe()
-cherrypy.quickstart(WorkoutsWeb(mgr))
+cherrypy.quickstart(WorkoutsWeb(mgr), config=conf)
