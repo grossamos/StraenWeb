@@ -82,7 +82,7 @@ class Database(object):
 	def getUserHash(self, username):
 		sql = "select has from user where username = '" + username + "'"
 		rows = self.execute(sql)
-		if len(rows) == 0:
+		if rows != None and len(rows) > 0:
 			return rows[0][0]
 		return 0
 
@@ -99,7 +99,7 @@ class Database(object):
 	def getLatestActivityId(self, deviceId):
 		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
 		rows = self.execute(sql)
-		if len(rows) > 0:
+		if rows != None and len(rows) > 0:
 			return rows[0][0]
 		return 0
 
@@ -253,13 +253,15 @@ class DataMgr(object):
 		self.db = NULL
 		self.listener = NULL
 
-	def authenticateUser(username, password):
+	def authenticateUser(self, username, password):
 		if len(username) == 0:
 			return False
 		if len(password) < 8:
 			return False
 
 		dbHash = self.db.getUserHash(username)
+		if dbHash == 0:
+			return False
 		return (dbHash == bcrypt.hashpw(password, dbHash))
 
 	def createUser(self, username, password1, password2):
@@ -407,12 +409,28 @@ class WorkoutsWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def login_submit(self, username, password):
-		self.mgr.authenticateUser(username, password)
+	def login_submit(self, username, password, *args, **kw):
+		try:
+			self.mgr.authenticateUser(username, password)
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="Unable to authenticate the user")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			print "Unexpected error:", sys.exc_info()[0]
+		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, password1, password2):
-		self.mgr.createUser(username, password1, password2)
+	def create_login_submit(self, username, password1, password2, *args, **kw):
+		try:
+			self.mgr.createUser(username, password1, password2)
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="Unable to create the user")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			print "Unexpected error:", sys.exc_info()[0]
+		return ""
 
 	@cherrypy.expose
 	def login(self):
