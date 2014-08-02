@@ -332,13 +332,20 @@ class WorkoutsWeb(object):
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
+			
+			key = "Name"
+			name = self.mgr.db.getLatestMetaData(key, deviceId)
+			if name != None:
+				response += json.dumps({"name":key, "value":name})
 
 			key = "Time"
 			time = self.mgr.db.getLatestMetaData(key, deviceId)
 			if time != None:
 				localtimezone = tzlocal()
 				valueStr = datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
-				response += json.dumps({"name":key, "value":valueStr})
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":"Sport", "value":valueStr})
 
 			key = "Distance"
 			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
