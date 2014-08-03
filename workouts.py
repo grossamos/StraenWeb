@@ -16,10 +16,6 @@ from cherrypy import tools
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
-CSS_DIR = os.path.join(os.path.abspath("."), u"css")
-IMAGES_DIR = os.path.join(os.path.abspath("."), u"images")
-MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
-
 class Location(object):
 	def __init__(self):
 		self.latitude = 0.0
@@ -44,6 +40,13 @@ class Database(object):
 				con.close()
 		return None
 
+	def quoteIdentifier(self, s, errors="strict"):
+		encodable = s.encode("utf-8", errors).decode("utf-8")
+		null_index = encodable.find("\x00")
+		if null_index >= 0:
+			return ""
+		return "\"" + encodable.replace("\"", "\"\"") + "\""
+
 	def create(self):
 		try:
 			self.execute("create table location (id integer primary key, deviceId integer, activityId integer, latitude double, longitude double, altitude double)")
@@ -56,7 +59,7 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table user (id integer primary key, username text, hash text)")
+			self.execute("create table user (id integer primary key, username text, firstname text, lastname text, hash text)")
 		except:
 			pass
 
@@ -70,12 +73,13 @@ class Database(object):
 		except:
 			pass
 	
-	def storeUser(self, username, hash):
-		sql = "insert into user values(NULL, '" + username + "', '" + hash + "')"
-		self.execute(sql)
+	def storeUser(self, username, firstname, lastname, hash):
+		sql = "insert into user values(NULL, " + self.quoteIdentifier(username) + ", " + self.quoteIdentifier(firstname) + ", " + self.quoteIdentifier(lastname) + ", '" + hash + "')"
+		rows = self.execute(sql)
+		return rows != None
 
 	def getUserHash(self, username):
-		sql = "select has from user where username = '" + username + "'"
+		sql = "select hash from user where username = " + self.quoteIdentifier(username)
 		rows = self.execute(sql)
 		if rows != None and len(rows) > 0:
 			return rows[0][0]
@@ -247,8 +251,12 @@ class DataMgr(object):
 			return False
 		return (dbHash == bcrypt.hashpw(password, dbHash))
 
-	def createUser(self, username, password1, password2):
+	def createUser(self, username, firstname, lastname, password1, password2):
 		if len(username) == 0:
+			return False
+		if len(firstname) == 0:
+			return False
+		if len(lastname) == 0:
 			return False
 		if len(password1) < 8:
 			return False
@@ -259,7 +267,7 @@ class DataMgr(object):
 
 		salt = bcrypt.gensalt()
 		hash = bcrypt.hashpw(password1, salt)
-		self.db.storeUser(username, hash)
+		return self.db.storeUser(username, firstname, lastname, hash)
 
 class WorkoutsWeb(object):
 	def __init__(self, mgr):
@@ -401,9 +409,12 @@ class WorkoutsWeb(object):
 	@cherrypy.expose
 	def login_submit(self, username, password, *args, **kw):
 		try:
-			self.mgr.authenticateUser(username, password)
-			myTemplate = Template(filename='error.html', module_directory='tempmod')
-			return myTemplate.render(error="Unable to authenticate the user")
+			if self.mgr.authenticateUser(username, password):
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="Logged in")
+			else:
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="Unable to authenticate the user")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -411,11 +422,14 @@ class WorkoutsWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, password1, password2, *args, **kw):
+	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
 		try:
-			self.mgr.createUser(username, password1, password2)
-			myTemplate = Template(filename='error.html', module_directory='tempmod')
-			return myTemplate.render(error="Unable to create the user")
+			if self.mgr.createUser(username, firstname, lastname, password1, password2):
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="User created")
+			else:
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="Unable to create the user")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -461,19 +475,19 @@ conf = {
 		'/css':
 		{
 			'tools.staticdir.on': True,
-			'tools.staticdir.dir': CSS_DIR
+			'tools.staticdir.dir': 'css'
 		},
 
 		'/images':
 		{
 			'tools.staticdir.on': True,
-			'tools.staticdir.dir': IMAGES_DIR,
+			'tools.staticdir.dir': 'images',
 		},
 
 		'/media':
 		{
 			'tools.staticdir.on': True,
-			'tools.staticdir.dir': MEDIA_DIR,
+			'tools.staticdir.dir': 'media',
 		}
 }
 
