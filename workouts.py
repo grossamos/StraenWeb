@@ -102,101 +102,332 @@ class Database(object):
 			pass
 	
 	def storeUser(self, username, firstname, lastname, hash):
-		sql = "insert into user values(NULL, " + self.quoteIdentifier(username) + ", " + self.quoteIdentifier(firstname) + ", " + self.quoteIdentifier(lastname) + ", '" + hash + "')"
-		rows = self.execute(sql)
-		return rows != None
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if firstname is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if lastname is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if hash is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return
+		if len(firstname) == 0:
+			cherrypy.log.error("firstname too short")
+			return
+		if len(lastname) == 0:
+			cherrypy.log.error("lastname too short")
+			return
+		if len(hash) == 0:
+			cherrypy.log.error("hash too short")
+			return
 
-	def getUserHash(self, username):
-		sql = "select hash from user where username = " + self.quoteIdentifier(username)
-		rows = self.execute(sql)
-		if rows != None and len(rows) > 0:
-			return rows[0][0]
-		return 0
-
-	def getDeviceId(self, deviceStr):
-		sql = "select id from device where device = '" + deviceStr + "'"
-		rows = self.execute(sql)
-		if len(rows) == 0:
-			sql = "insert into device values(NULL, '" + deviceStr + "', 0)"
-			rows = self.execute(sql)
-			sql = "select id from device where device = '" + deviceStr + "'"
-			rows = self.execute(sql)
-		return rows[0][0]
-
-	def getLatestActivityId(self, deviceId):
-		sql = "select max(activityId) from location where deviceId = " + str(deviceId)
-		rows = self.execute(sql)
-		if rows != None and len(rows) > 0:
-			return rows[0][0]
-		return 0
-
-	def clearMetadata(self, deviceStr):
-		deviceId = self.getDeviceId(deviceStr)
-		sql = "delete from metadata where deviceId = " + str(deviceId)
-		self.execute(sql)
-
-	def storeMetadata(self, deviceStr, activityId, key, value):
-		deviceId = self.getDeviceId(deviceStr)
-		sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
-		self.execute(sql)
-
-	def getMetaData(self, key, deviceId, activityId):
 		try:
-			sql = "select value from metadata where key = '" + key + "' and deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " limit 1"
+			sql = "insert into user values(NULL, " + self.quoteIdentifier(username) + ", " + self.quoteIdentifier(firstname) + ", " + self.quoteIdentifier(lastname) + ", '" + hash + "')"
 			rows = self.execute(sql)
-			if rows != None:
-				return rows[0][0]
+			return rows != None
 		except:
 			pass
 		return None
 
+	def getUserHash(self, username):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return 0
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return 0
+
+		try:
+			sql = "select hash from user where username = " + self.quoteIdentifier(username)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+			return 0
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
+	def getUserIdFromUserName(self, username):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return 0
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return 0
+
+		try:
+			sql = "select id from user where username = " + self.quoteIdentifier(username)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+			return 0
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
+	def getDeviceIdFromDeviceStr(self, deviceStr):
+		if deviceStr is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if len(deviceStr) == 0:
+			cherrypy.log.error("username too short")
+			return None
+
+		try:
+			sql = "select id from device where device = " + self.quoteIdentifier(deviceStr)
+			rows = self.execute(sql)
+			if len(rows) == 0:
+				sql = "insert into device values(NULL, " + self.quoteIdentifier(deviceStr) + ", 0)"
+				rows = self.execute(sql)
+				sql = "select id from device where device = " + self.quoteIdentifier(deviceStr)
+				rows = self.execute(sql)
+			return rows[0][0]
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
+	def getDeviceIdFromUsername(self, username):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return None
+
+		try:
+			sql = "select device.id from device inner join user on device.userId=user.id and user.username = " + self.quoteIdentifier(username)
+			rows = self.execute(sql)
+			if len(rows) == 0:
+				sql = "insert into device values(NULL, " + self.quoteIdentifier(deviceStr) + ", 0)"
+				rows = self.execute(sql)
+				sql = "select id from device where device = " + self.quoteIdentifier(deviceStr)
+				rows = self.execute(sql)
+			return rows[0][0]
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
+	def getLatestActivityId(self, deviceId):
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
+		try:
+			sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return 0
+
+	def clearMetadata(self, deviceStr):
+		if deviceStr is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if len(deviceStr) == 0:
+			cherrypy.log.error("deviceStr too short")
+			return
+
+		try:
+			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
+			sql = "delete from metadata where deviceId = " + str(deviceId)
+			self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return
+
+	def storeMetadata(self, deviceStr, activityId, key, value):
+		if deviceStr is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if activityId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if key is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if value is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if len(deviceStr) == 0:
+			cherrypy.log.error("deviceStr too short")
+			return
+
+		try:
+			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
+			sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
+			self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return
+
+	def getMetaData(self, key, deviceId, activityId):
+		if key is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if activityId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
+		try:
+			sql = "select value from metadata where key = " + self.quoteIdentifier(key) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " limit 1"
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
 	def getLatestMetaData(self, key, deviceId):
-		activityId = self.getLatestActivityId(deviceId)
-		if activityId > 0:
-			return self.getMetaData(key, deviceId, activityId)
+		if key is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
+		try:
+			activityId = self.getLatestActivityId(deviceId)
+			if activityId > 0:
+				return self.getMetaData(key, deviceId, activityId)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
 	def storeLocation(self, deviceStr, activityId, latitude, longitude, altitude):
-		deviceId = self.getDeviceId(deviceStr)
-		sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
-		self.execute(sql)
+		if deviceStr is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if activityId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if latitude is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if longitude is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+		if altitude is None:
+			cherrypy.log.error("Unexpected empty object")
+			return
+
+		try:
+			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
+			sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
+			self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return
 
 	def listLocations(self, deviceId, activityId):
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if activityId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
 		locations = []
-		sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
-		rows = self.execute(sql)
-		if rows != None:
-			for row in rows:
-				location = Location()
-				location.latitude = row[0]
-				location.longitude = row[1]
-				locations.append(location)
+
+		try:
+			sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			rows = self.execute(sql)
+			if rows != None:
+				for row in rows:
+					location = Location()
+					location.latitude = row[0]
+					location.longitude = row[1]
+					locations.append(location)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 		return locations
 
 	def listLastLocations(self, deviceId, activityId, num):
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if activityId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if num is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
 		locations = []
-		sql = "select count(*) from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
-		rows = self.execute(sql)
-		if rows != None:
-			rowCount = int(rows[0][0])
-			newRows = rowCount - num
-			if newRows > 0:
-				sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
-				rows = self.execute(sql)
-				if rows != None:
-					for row in rows:
-						location = Location()
-						location.latitude = row[0]
-						location.longitude = row[1]
-						locations.append(location)
+
+		try:
+			sql = "select count(*) from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				rowCount = int(rows[0][0])
+				newRows = rowCount - num
+				if newRows > 0:
+					sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
+					rows = self.execute(sql)
+					if rows != None:
+						for row in rows:
+							location = Location()
+							location.latitude = row[0]
+							location.longitude = row[1]
+							locations.append(location)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 		return locations
 
 	def listLocationsForLatestActivity(self, deviceId):
+		if deviceId is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+
 		locations = []
-		activityId = self.getLatestActivityId(deviceId)
-		if activityId > 0:
-			locations = self.listLocations(deviceId, activityId)
+
+		try:
+			activityId = self.getLatestActivityId(deviceId)
+			if activityId > 0:
+				locations = self.listLocations(deviceId, activityId)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 		return locations
+
+	def listUsersFollowed(self, username):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return None
+
+		followers = []
+
+		try:
+			userId = self.getUserIdFromUserName(username)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return followers
 
 class DataListener(threading.Thread):
 	def __init__(self, db):
@@ -322,7 +553,7 @@ class WorkoutsWeb(object):
 			return ""
 		
 		try:
-			deviceId = self.mgr.db.getDeviceId(deviceStr)
+			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			locations = self.mgr.db.listLastLocations(deviceId, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
@@ -339,7 +570,7 @@ class WorkoutsWeb(object):
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
-			print "Unexpected error:", sys.exc_info()[0]
+			cherrypy.log.error(sys.exc_info()[0])
 			return ""
 		return ""
 
@@ -352,7 +583,7 @@ class WorkoutsWeb(object):
 			return ""
 
 		try:
-			deviceId = self.mgr.db.getDeviceId(deviceStr)
+			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -369,7 +600,7 @@ class WorkoutsWeb(object):
 				valueStr = datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":"Sport", "value":valueStr})
+				response += json.dumps({"name":"Time", "value":valueStr})
 
 			key = "Distance"
 			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
@@ -409,14 +640,41 @@ class WorkoutsWeb(object):
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
-			print "Unexpected error:", sys.exc_info()[0]
+			cherrypy.log.error(sys.exc_info()[0])
+			return ""
+		return ""
+
+	@cherrypy.tools.json_out()
+	@cherrypy.expose
+	def listUsersFollowed(self, username=None, num=None, *args, **kw):
+		if username is None:
+			return ""
+
+		try:
+			followers = self.mgr.db.listUsersFollowed(username)
+			
+			cherrypy.response.headers['Content-Type'] = 'application/json'
+			response = "["
+			
+			for follower in followers:
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"username":username})
+
+			response += "]"
+			
+			return response
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 			return ""
 		return ""
 
 	@cherrypy.expose
 	def user(self, deviceStr=None, *args, **kw):
 		try:
-			deviceId = self.mgr.db.getDeviceId(deviceStr)
+			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			activityId = self.mgr.db.getLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
 
@@ -440,8 +698,26 @@ class WorkoutsWeb(object):
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
-			print "Unexpected error:", sys.exc_info()[0]
+			cherrypy.log.error(sys.exc_info()[0])
 			return ""
+		return ""
+
+	@cherrypy.expose
+	@require()
+	def following(self, username=None, *args, **kw):
+		try:
+			followers = self.mgr.db.listUsersFollowed(username)
+			for follower in followers:
+				pass
+
+#			myTemplate = Template(filename='map_multi.html', module_directory='tempmod')
+#			return myTemplate.render()
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="foo.")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
 		return ""
 
 	@cherrypy.expose
@@ -450,32 +726,28 @@ class WorkoutsWeb(object):
 			if self.mgr.authenticateUser(username, password):
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
-				self.on_login(username)
-
-				myTemplate = Template(filename='dashboard.html', module_directory='tempmod')
-				return myTemplate.render()
+				return self.following(username)
 			else:
 				myTemplate = Template(filename='error.html', module_directory='tempmod')
-				return myTemplate.render(error="Unable to authenticate the user")
+				return myTemplate.render(error="Unable to authenticate the user.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
-			print "Unexpected error:", sys.exc_info()[0]
+			cherrypy.log.error(sys.exc_info()[0])
 		return ""
 
 	@cherrypy.expose
 	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
 		try:
 			if self.mgr.createUser(username, firstname, lastname, password1, password2):
-				myTemplate = Template(filename='error.html', module_directory='tempmod')
-				return myTemplate.render(error="User created")
+				return self.following(username)
 			else:
 				myTemplate = Template(filename='error.html', module_directory='tempmod')
-				return myTemplate.render(error="Unable to create the user")
+				return myTemplate.render(error="Unable to create the user.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
-			print "Unexpected error:", sys.exc_info()[0]
+			cherrypy.log.error(sys.exc_info()[0])
 		return ""
 
 	@cherrypy.expose
@@ -491,12 +763,6 @@ class WorkoutsWeb(object):
 	@cherrypy.expose
 	def about(self):
 		myTemplate = Template(filename='about.html', module_directory='tempmod')
-		return myTemplate.render()
-
-	@cherrypy.expose
-	@require()
-	def dashboard(self, username=None, *args, **kw):
-		myTemplate = Template(filename='dashboard.html', module_directory='tempmod')
 		return myTemplate.render()
 
 	@cherrypy.expose
@@ -534,7 +800,10 @@ conf = {
 		}
 }
 
-cherrypy.config.update( {'server.socket_host': '0.0.0.0'} )
+cherrypy.config.update( {
+					   'server.socket_host': '0.0.0.0',
+					   'log.access_file': "workouts_error.log",
+					   'log.error_file': "workouts_access.log" } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 cherrypy.engine.signals.subscribe()
 cherrypy.quickstart(WorkoutsWeb(mgr), config=conf)
