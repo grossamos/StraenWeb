@@ -17,6 +17,7 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 SESSION_KEY = '_cp_username'
+MIN_PASSWORD_LEN = 8
 
 def check_auth(*args, **kwargs):
 	# A tool that looks in config for 'auth.require'. If found and it is not None, a login
@@ -92,7 +93,12 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table follower (id integer primary key, userId integer, followerId integer)")
+			self.execute("create table followedBy (id integer primary key, userId integer, followerId integer)")
+		except:
+			pass
+
+		try:
+			self.execute("create table following (id integer primary key, userId integer, followingId integer)")
 		except:
 			pass
 
@@ -412,7 +418,7 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return locations
 
-	def listUsersFollowed(self, username):
+	def listUsersFollowing(self, username):
 		if username is None:
 			cherrypy.log.error("Unexpected empty object")
 			return None
@@ -420,14 +426,43 @@ class Database(object):
 			cherrypy.log.error("username too short")
 			return None
 
-		followers = []
-
+		following = []
+		
 		try:
 			userId = self.getUserIdFromUserName(username)
+			if userId != None:
+				sql = "select * from following where userId = " + str(userId)
+				rows = self.execute(sql)
+				if rows != None:
+					for row in rows:
+						following.append(row[0])
 		except:
 			traceback.print_exc(file=sys.stdout)
 			cherrypy.log.error(sys.exc_info()[0])
-		return followers
+		return following
+
+	def listUsersFollowedBy(self, username):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if len(username) == 0:
+			cherrypy.log.error("username too short")
+			return None
+
+		followedBy = []
+
+		try:
+			userId = self.getUserIdFromUserName(username)
+			if userId != None:
+				sql = "select * from followedBy where userId = " + str(userId)
+				rows = self.execute(sql)
+				if rows != None:
+					for row in rows:
+						followedBy.append(row[0])
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return followedBy
 
 class DataListener(threading.Thread):
 	def __init__(self, db):
@@ -502,7 +537,7 @@ class DataMgr(object):
 	def authenticateUser(self, username, password):
 		if len(username) == 0:
 			return False
-		if len(password) < 8:
+		if len(password) < MIN_PASSWORD_LEN:
 			return False
 
 		dbHash = self.db.getUserHash(username)
@@ -517,7 +552,7 @@ class DataMgr(object):
 			return False
 		if len(lastname) == 0:
 			return False
-		if len(password1) < 8:
+		if len(password1) < MIN_PASSWORD_LEN:
 			return False
 		if password1 != password2:
 			return False
@@ -646,12 +681,12 @@ class WorkoutsWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def listUsersFollowed(self, username=None, num=None, *args, **kw):
+	def listUsersFollowing(self, username=None, num=None, *args, **kw):
 		if username is None:
 			return ""
-
+		
 		try:
-			followers = self.mgr.db.listUsersFollowed(username)
+			followers = self.mgr.db.listUsersFollowing(username)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -659,7 +694,34 @@ class WorkoutsWeb(object):
 			for follower in followers:
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"username":username})
+				response += json.dumps({"username":follower})
+			
+			response += "]"
+			
+			return response
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+			return ""
+		return ""
+
+	@cherrypy.tools.json_out()
+	@cherrypy.expose
+	def listUsersFollowedBy(self, username=None, num=None, *args, **kw):
+		if username is None:
+			return ""
+
+		try:
+			followers = self.mgr.db.listUsersFollowedBy(username)
+			
+			cherrypy.response.headers['Content-Type'] = 'application/json'
+			response = "["
+			
+			for follower in followers:
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"username":follower})
 
 			response += "]"
 			
@@ -701,10 +763,28 @@ class WorkoutsWeb(object):
 			cherrypy.log.error(sys.exc_info()[0])
 			return ""
 		return ""
+	
+	@cherrypy.expose
+	@require()
+	def show_followedBy(self, username=None, *args, **kw):
+		try:
+			followers = self.mgr.db.listUsersFollowed(username)
+			for follower in followers:
+				pass
+			
+#			myTemplate = Template(filename='map_multi.html', module_directory='tempmod')
+#			return myTemplate.render()
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="foo.")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return ""
 
 	@cherrypy.expose
 	@require()
-	def following(self, username=None, *args, **kw):
+	def show_following(self, username=None, *args, **kw):
 		try:
 			followers = self.mgr.db.listUsersFollowed(username)
 			for follower in followers:
@@ -726,7 +806,7 @@ class WorkoutsWeb(object):
 			if self.mgr.authenticateUser(username, password):
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
-				return self.following(username)
+				return self.show_following(username)
 			else:
 				myTemplate = Template(filename='error.html', module_directory='tempmod')
 				return myTemplate.render(error="Unable to authenticate the user.")
@@ -740,7 +820,7 @@ class WorkoutsWeb(object):
 	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
 		try:
 			if self.mgr.createUser(username, firstname, lastname, password1, password2):
-				return self.following(username)
+				return self.show_following(username)
 			else:
 				myTemplate = Template(filename='error.html', module_directory='tempmod')
 				return myTemplate.render(error="Unable to create the user.")
