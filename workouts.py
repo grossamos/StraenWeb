@@ -801,6 +801,30 @@ class WorkoutsWeb(object):
 		return ""
 
 	@cherrypy.expose
+	@require()
+	def invite_to_follow(self, username=None, target_username=None, *args, **kw):
+		try:
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="foo.")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return ""
+
+	@cherrypy.expose
+	@require()
+	def request_to_follow(self, username=None, target_username=None, *args, **kw):
+		try:
+			myTemplate = Template(filename='error.html', module_directory='tempmod')
+			return myTemplate.render(error="foo.")
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return ""
+
+	@cherrypy.expose
 	def login_submit(self, username, password, *args, **kw):
 		try:
 			if self.mgr.authenticateUser(username, password):
