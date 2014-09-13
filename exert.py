@@ -57,7 +57,7 @@ class Database(object):
 
 	def execute(self, sql):
 		try:
-			con = sqlite3.connect('workouts.sqlite')
+			con = sqlite3.connect('exert.sqlite')
 			with con:
 				cur = con.cursor()
 				cur.execute(sql)
@@ -563,7 +563,7 @@ class DataMgr(object):
 		hash = bcrypt.hashpw(password1, salt)
 		return self.db.storeUser(username, firstname, lastname, hash)
 
-class WorkoutsWeb(object):
+class ExertWeb(object):
 	_cp_config = {
 		'tools.sessions.on': True,
 		'tools.auth.on': True
@@ -571,7 +571,7 @@ class WorkoutsWeb(object):
 
 	def __init__(self, mgr):
 		self.mgr = mgr
-		super(WorkoutsWeb, self).__init__()
+		super(ExertWeb, self).__init__()
 
 	def terminate():
 		self.mgr.listener.stop.set()
@@ -734,14 +734,14 @@ class WorkoutsWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def user(self, deviceStr=None, *args, **kw):
+	def device(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			activityId = self.mgr.db.getLatestActivityId(deviceId)
 			locations = self.mgr.db.listLocations(deviceId, activityId)
 
 			if len(locations) == 0:
-				myTemplate = Template(filename='auth_error.html', module_directory='tempmod')
+				myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
 				return myTemplate.render(error="There is no data for the specified user.")
 				
 			route = ""
@@ -872,7 +872,7 @@ class WorkoutsWeb(object):
 	@cherrypy.expose
 	def index(self):
 		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
-		return self.user(deviceStr)
+		return self.device(deviceStr)
 
 
 mako.collection_size = 100
@@ -906,8 +906,8 @@ conf = {
 
 cherrypy.config.update( {
 					   'server.socket_host': '0.0.0.0',
-					   'log.access_file': "workouts_error.log",
-					   'log.error_file': "workouts_access.log" } )
+					   'log.access_file': "exert_error.log",
+					   'log.error_file': "exert_access.log" } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 cherrypy.engine.signals.subscribe()
-cherrypy.quickstart(WorkoutsWeb(mgr), config=conf)
+cherrypy.quickstart(ExertWeb(mgr), config=conf)
