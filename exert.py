@@ -201,7 +201,7 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
-	def getDeviceIdFromUsername(self, username):
+	def getDeviceFromUsername(self, username):
 		if username is None:
 			cherrypy.log.error("Unexpected empty object")
 			return None
@@ -210,11 +210,11 @@ class Database(object):
 			return None
 
 		try:
-			sql = "select device.id from device inner join user on device.userId=user.id and user.username = " + self.quoteIdentifier(username)
+			sql = "select device.id, device.device from device inner join user on device.userId=user.id and user.username = " + self.quoteIdentifier(username)
 			rows = self.execute(sql)
 			if len(rows) == 0:
 				return None
-			return rows[0][0]
+			return rows[0][0],rows[0][1]
 		except:
 			traceback.print_exc(file=sys.stdout)
 			cherrypy.log.error(sys.exc_info()[0])
@@ -730,8 +730,8 @@ class ExertWeb(object):
 			return ""
 		return ""
 
-	def renderPageForDeviceId(self, deviceId):
-		if deviceId is None:
+	def renderPageForDeviceId(self, deviceStr, deviceId):
+		if deviceStr is None or deviceId is None:
 			myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
 			return myTemplate.render(error="There is no data for the specified user.")
 
@@ -760,7 +760,7 @@ class ExertWeb(object):
 	def device(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
-			return self.renderPageForDeviceId(deviceId)
+			return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -771,7 +771,7 @@ class ExertWeb(object):
 	@cherrypy.expose
 	def user(self, username=None, *args, **kw):
 		try:
-			deviceId = self.mgr.db.getDeviceIdFromUsername(username)
+			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
 			return self.renderPageForDeviceId(deviceId)
 		except:
 			cherrypy.response.status = 500
@@ -887,7 +887,7 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def index(self):
-		deviceStr = "E4F90A14-9763-49FD-B4E0-038D50A3D289"
+		deviceStr = "741973D3-0B42-4401-AB38-A30F476D8039"
 		return self.device(deviceStr)
 
 
