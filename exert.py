@@ -93,12 +93,12 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table followedBy (id integer primary key, userId integer, followerId integer)")
+			self.execute("create table followedBy (id integer primary key, userId integer, followerId integer, approved integer)")
 		except:
 			pass
 
 		try:
-			self.execute("create table following (id integer primary key, userId integer, followingId integer)")
+			self.execute("create table following (id integer primary key, userId integer, followingId integer, approved integer)")
 		except:
 			pass
 
@@ -213,10 +213,7 @@ class Database(object):
 			sql = "select device.id from device inner join user on device.userId=user.id and user.username = " + self.quoteIdentifier(username)
 			rows = self.execute(sql)
 			if len(rows) == 0:
-				sql = "insert into device values(NULL, " + self.quoteIdentifier(deviceStr) + ", 0)"
-				rows = self.execute(sql)
-				sql = "select id from device where device = " + self.quoteIdentifier(deviceStr)
-				rows = self.execute(sql)
+				return None
 			return rows[0][0]
 		except:
 			traceback.print_exc(file=sys.stdout)
@@ -733,30 +730,49 @@ class ExertWeb(object):
 			return ""
 		return ""
 
+	def renderPageForDeviceId(self, deviceId):
+		if deviceId is None:
+			myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
+			return myTemplate.render(error="There is no data for the specified user.")
+
+		activityId = self.mgr.db.getLatestActivityId(deviceId)
+		locations = self.mgr.db.listLocations(deviceId, activityId)
+
+		if locations is None or len(locations) == 0:
+			myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
+			return myTemplate.render(error="There is no data for the specified user.")
+
+		route = ""
+		centerLat = 0
+		centerLon = 0
+
+		for location in locations:
+			route += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
+
+		if len(locations) > 0:
+			centerLat = locations[0].latitude
+			centerLon = locations[0].longitude
+
+		myTemplate = Template(filename='map_single.html', module_directory='tempmod')
+		return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
+
 	@cherrypy.expose
 	def device(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
-			activityId = self.mgr.db.getLatestActivityId(deviceId)
-			locations = self.mgr.db.listLocations(deviceId, activityId)
+			return self.renderPageForDeviceId(deviceId)
+		except:
+			cherrypy.response.status = 500
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+			return ""
+		return ""
 
-			if len(locations) == 0:
-				myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
-				return myTemplate.render(error="There is no data for the specified user.")
-				
-			route = ""
-			centerLat = 0
-			centerLon = 0
-
-			for location in locations:
-				route += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
-
-			if len(locations) > 0:
-				centerLat = locations[0].latitude
-				centerLon = locations[0].longitude
-
-			myTemplate = Template(filename='map_single.html', module_directory='tempmod')
-			return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
+	@cherrypy.expose
+	def user(self, username=None, *args, **kw):
+		try:
+			deviceId = self.mgr.db.getDeviceIdFromUsername(username)
+			return self.renderPageForDeviceId(deviceId)
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
