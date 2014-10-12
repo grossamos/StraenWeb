@@ -229,6 +229,7 @@ class Database(object):
 			return None
 
 		try:
+			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			cherrypy.log.error(sys.exc_info()[0])
