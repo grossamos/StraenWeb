@@ -107,39 +107,40 @@ class Database(object):
 		except:
 			pass
 	
-	def storeUser(self, username, firstname, lastname, hash):
+	def insertUser(self, username, firstname, lastname, hash):
 		if username is None:
 			cherrypy.log.error("Unexpected empty object")
-			return
+			return False
 		if firstname is None:
 			cherrypy.log.error("Unexpected empty object")
-			return
+			return False
 		if lastname is None:
 			cherrypy.log.error("Unexpected empty object")
-			return
+			return False
 		if hash is None:
 			cherrypy.log.error("Unexpected empty object")
-			return
+			return False
 		if len(username) == 0:
 			cherrypy.log.error("username too short")
-			return
+			return False
 		if len(firstname) == 0:
 			cherrypy.log.error("firstname too short")
-			return
+			return False
 		if len(lastname) == 0:
 			cherrypy.log.error("lastname too short")
-			return
+			return False
 		if len(hash) == 0:
 			cherrypy.log.error("hash too short")
-			return
+			return False
 
 		try:
 			sql = "insert into user values(NULL, " + self.quoteIdentifier(username) + ", " + self.quoteIdentifier(firstname) + ", " + self.quoteIdentifier(lastname) + ", '" + hash + "')"
 			rows = self.execute(sql)
 			return rows != None
 		except:
-			pass
-		return None
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return False
 
 	def getUserHash(self, username):
 		if username is None:
@@ -160,6 +161,46 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
+	def insertToFollowedByList(self, username, followedByName):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return False
+		if followedByName is None:
+			cherrypy.log.error("Unexpected empty object")
+			return False
+
+		try:
+			userId = self.getUserIdFromUserName(username)
+			followerId = self.getUserIdFromUserName(followedByName)
+
+			sql = "insert into followedBy values(NULL, " + userId + ", " + followerId + ", 0)"
+			rows = self.execute(sql)
+			return rows != None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return False
+
+	def insertToFollowingList(self, username, followingName):
+		if username is None:
+			cherrypy.log.error("Unexpected empty object")
+			return False
+		if followingName is None:
+			cherrypy.log.error("Unexpected empty object")
+			return False
+
+		try:
+			userId = self.getUserIdFromUserName(username)
+			followerId = self.getUserIdFromUserName(followingName)
+			
+			sql = "insert into following values(NULL, " + userId + ", " + followerId + ", 0)"
+			rows = self.execute(sql)
+			return rows != None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return False
+
 	def getUserIdFromUserName(self, username):
 		if username is None:
 			cherrypy.log.error("Unexpected empty object")
@@ -179,6 +220,20 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
+	def insertDevice(self, deviceId, userId):
+		if deviceStr is None:
+			cherrypy.log.error("Unexpected empty object")
+			return None
+		if len(deviceStr) == 0:
+			cherrypy.log.error("username too short")
+			return None
+
+		try:
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+	
 	def getDeviceIdFromDeviceStr(self, deviceStr):
 		if deviceStr is None:
 			cherrypy.log.error("Unexpected empty object")
@@ -220,7 +275,16 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
-	def getLatestActivityId(self, deviceId):
+	def updateDevice(self, deviceId, userId):
+		try:
+			sql = "update device set userId = " + str(userId) + " where id = " + str(deviceId)
+			rows = self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			cherrypy.log.error(sys.exc_info()[0])
+		return None
+
+	def getLatestActivityIdForDevice(self, deviceId):
 		if deviceId is None:
 			cherrypy.log.error("Unexpected empty object")
 			return None
@@ -252,7 +316,7 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return
 
-	def storeMetadata(self, deviceStr, activityId, key, value):
+	def insertMetadata(self, deviceStr, activityId, key, value):
 		if deviceStr is None:
 			cherrypy.log.error("Unexpected empty object")
 			return
@@ -308,7 +372,7 @@ class Database(object):
 			return None
 
 		try:
-			activityId = self.getLatestActivityId(deviceId)
+			activityId = self.getLatestActivityIdForDevice(deviceId)
 			if activityId > 0:
 				return self.getMetaData(key, deviceId, activityId)
 		except:
@@ -316,7 +380,7 @@ class Database(object):
 			cherrypy.log.error(sys.exc_info()[0])
 		return None
 
-	def storeLocation(self, deviceStr, activityId, latitude, longitude, altitude):
+	def insertLocation(self, deviceStr, activityId, latitude, longitude, altitude):
 		if deviceStr is None:
 			cherrypy.log.error("Unexpected empty object")
 			return
@@ -407,7 +471,7 @@ class Database(object):
 		locations = []
 
 		try:
-			activityId = self.getLatestActivityId(deviceId)
+			activityId = self.getLatestActivityIdForDevice(deviceId)
 			if activityId > 0:
 				locations = self.listLocations(deviceId, activityId)
 		except:
@@ -484,7 +548,7 @@ class DataListener(threading.Thread):
 			lat = decodedObj["Latitude"]
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
-			self.db.storeLocation(deviceId, activityId, lat, lon, alt)
+			self.db.insertLocation(deviceId, activityId, lat, lon, alt)
 
 			# Clear the metadata
 			self.db.clearMetadata(deviceId)
@@ -494,7 +558,7 @@ class DataListener(threading.Thread):
 				key = item[0]
 				value = item[1]
 				if not key in self.notMetaData:
-					self.db.storeMetadata(deviceId, activityId, key, value)
+					self.db.insertMetadata(deviceId, activityId, key, value)
 		except ValueError:
 			print "ValueError in JSON data."
 		except KeyError, e:
@@ -520,6 +584,7 @@ class DataListener(threading.Thread):
 			if line:
 				self.parseJsonStr(line)
 
+
 class DataMgr(object):
 	def __init__(self):
 		self.db = Database()
@@ -542,7 +607,7 @@ class DataMgr(object):
 			return False
 		return (dbHash == bcrypt.hashpw(password, dbHash))
 
-	def createUser(self, username, firstname, lastname, password1, password2):
+	def createUser(self, username, firstname, lastname, password1, password2, device_str):
 		if len(username) == 0:
 			return False
 		if len(firstname) == 0:
@@ -555,10 +620,41 @@ class DataMgr(object):
 			return False
 		if self.db.getUserHash(username) != 0:
 			return False
+		if len(device_str) == 0:
+			return False
 
 		salt = bcrypt.gensalt()
 		hash = bcrypt.hashpw(password1, salt)
-		return self.db.storeUser(username, firstname, lastname, hash)
+		if not self.db.insertUser(username, firstname, lastname, hash):
+			return False
+
+		userId = self.db.getUserIdFromUserName(username)
+		deviceId = self.db.getDeviceIdFromDeviceStr(deviceStr)
+		self.db.updateDevice(deviceId, userId)
+			
+		return True
+
+	def listUsersFollowedBy(username):
+		return self.db.listUsersFollowedBy(username)
+
+	def listUsersFollowing(username):
+		return self.db.listUsersFollowing(username)
+
+	def inviteToFollow(self, username, followedByName):
+		if len(username) == 0:
+			return False
+		if len(followedByName) == 0:
+			return False
+
+		return self.db.insertToFollowedByList(username, followedByName)
+
+	def requestToFollow(self, username, followingName):
+		if len(username) == 0:
+			return False
+		if len(followingName) == 0:
+			return False
+
+		return self.db.insertToFollowingList(username, followedByName)
 
 class ExertWeb(object):
 	_cp_config = {
@@ -608,7 +704,7 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def updatemetadata(self, deviceStr=None, activityId=None, *args, **kw):
+	def insertMetadata(self, deviceStr=None, activityId=None, *args, **kw):
 		if deviceStr is None:
 			return ""
 		if activityId is None:
@@ -678,7 +774,7 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def listUsersFollowing(self, username=None, num=None, *args, **kw):
+	def liser_users_following(self, username=None, num=None, *args, **kw):
 		if username is None:
 			return ""
 		
@@ -705,7 +801,7 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def listUsersFollowedBy(self, username=None, num=None, *args, **kw):
+	def liser_users_followed_by(self, username=None, num=None, *args, **kw):
 		if username is None:
 			return ""
 
@@ -735,7 +831,7 @@ class ExertWeb(object):
 			myTemplate = Template(filename='error_logged_in.html', module_directory='tempmod')
 			return myTemplate.render(error="There is no data for the specified user.")
 
-		activityId = self.mgr.db.getLatestActivityId(deviceId)
+		activityId = self.mgr.db.getLatestActivityIdForDevice(deviceId)
 		locations = self.mgr.db.listLocations(deviceId, activityId)
 
 		if locations is None or len(locations) == 0:
@@ -782,14 +878,14 @@ class ExertWeb(object):
 	
 	@cherrypy.expose
 	@require()
-	def show_followedBy(self, username=None, *args, **kw):
+	def show_followed_by(self, username=None, *args, **kw):
 		try:
-			followers = self.mgr.db.listUsersFollowed(username)
+			list = ""
+
+			followers = self.mgr.listUsersFollowedBy(username)
 			for follower in followers:
-				pass
+				list += follower + "\n"
 			
-#			myTemplate = Template(filename='map_multi.html', module_directory='tempmod')
-#			return myTemplate.render()
 			myTemplate = Template(filename='error.html', module_directory='tempmod')
 			return myTemplate.render(error="foo.")
 		except:
@@ -802,12 +898,10 @@ class ExertWeb(object):
 	@require()
 	def show_following(self, username=None, *args, **kw):
 		try:
-			followers = self.mgr.db.listUsersFollowed(username)
+			followers = self.mgr.listUsersFollowing(username)
 			for follower in followers:
-				pass
+				list += follower + "\n"
 
-#			myTemplate = Template(filename='map_multi.html', module_directory='tempmod')
-#			return myTemplate.render()
 			myTemplate = Template(filename='error.html', module_directory='tempmod')
 			return myTemplate.render(error="foo.")
 		except:
@@ -820,8 +914,11 @@ class ExertWeb(object):
 	@require()
 	def invite_to_follow(self, username=None, target_username=None, *args, **kw):
 		try:
-			myTemplate = Template(filename='error.html', module_directory='tempmod')
-			return myTemplate.render(error="foo.")
+			if self.mgr.inviteToFollow(username, target_username):
+				return ""
+			else:
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -832,8 +929,11 @@ class ExertWeb(object):
 	@require()
 	def request_to_follow(self, username=None, target_username=None, *args, **kw):
 		try:
-			myTemplate = Template(filename='error.html', module_directory='tempmod')
-			return myTemplate.render(error="foo.")
+			if self.mgr.requestToFollow(username, target_username):
+				return ""
+			else:
+				myTemplate = Template(filename='error.html', module_directory='tempmod')
+				return myTemplate.render(error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -841,7 +941,7 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def login_submit(self, username, password, *args, **kw):
+	def login_submit(self, username, password, device_str, *args, **kw):
 		try:
 			if self.mgr.authenticateUser(username, password):
 				cherrypy.session.regenerate()
@@ -857,9 +957,9 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
+	def create_login_submit(self, username, firstname, lastname, password1, password2, device_str, *args, **kw):
 		try:
-			if self.mgr.createUser(username, firstname, lastname, password1, password2):
+			if self.mgr.createUser(username, firstname, lastname, password1, password2, device_str):
 				return self.show_following(username)
 			else:
 				myTemplate = Template(filename='error.html', module_directory='tempmod')
@@ -887,7 +987,8 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def index(self):
-		deviceStr = "741973D3-0B42-4401-AB38-A30F476D8039"
+		#iPhone4S deviceStr = "741973D3-0B42-4401-AB38-A30F476D8039"
+		deviceStr = "4122C618-85F7-48AB-91A7-D6CFA4B3DBAD"
 		return self.device(deviceStr)
 
 
