@@ -705,7 +705,7 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def insertMetadata(self, deviceStr=None, activityId=None, *args, **kw):
+	def updatemetadata(self, deviceStr=None, activityId=None, *args, **kw):
 		if deviceStr is None:
 			return ""
 		if activityId is None:
