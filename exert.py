@@ -13,6 +13,7 @@ import bcrypt
 
 from dateutil.tz import tzlocal
 from cherrypy import tools
+from cherrypy.process.plugins import Daemonizer
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
@@ -1024,8 +1025,9 @@ conf = {
 
 cherrypy.config.update( {
 					   'server.socket_host': '0.0.0.0',
+					   'requests.show_tracebacks':False,
 					   'log.access_file': "exert_error.log",
 					   'log.error_file': "exert_access.log" } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
-cherrypy.engine.signals.subscribe()
+#cherrypy.engine.signals.subscribe()
 cherrypy.quickstart(ExertWeb(mgr), config=conf)
