@@ -67,6 +67,7 @@ class Database(object):
 				cur.execute(sql)
 				return cur.fetchall()
 		except:
+			cherrypy.log.error("Error opening the database")
 			pass
 		finally:
 			if con:
@@ -250,6 +251,8 @@ class Database(object):
 		try:
 			sql = "select id from device where device = " + self.quoteIdentifier(deviceStr)
 			rows = self.execute(sql)
+			if rows is None:
+				return None
 			if len(rows) == 0:
 				sql = "insert into device values(NULL, " + self.quoteIdentifier(deviceStr) + ", 0)"
 				rows = self.execute(sql)
