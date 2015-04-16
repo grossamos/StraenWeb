@@ -995,8 +995,7 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def index(self):
-		deviceStr = "4122C618-85F7-48AB-91A7-D6CFA4B3DBAD"
-		return self.device(deviceStr)
+		return self.login()
 
 
 mako.collection_size = 100
