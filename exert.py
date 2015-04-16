@@ -1,4 +1,7 @@
 import cherrypy
+#from cherrypy.process.plugins import Daemonizer
+#Daemonizer(cherrypy.engine).subscribe()
+
 import datetime
 import json
 import mako
@@ -989,7 +992,6 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def index(self):
-		#iPhone4S deviceStr = "741973D3-0B42-4401-AB38-A30F476D8039"
 		deviceStr = "4122C618-85F7-48AB-91A7-D6CFA4B3DBAD"
 		return self.device(deviceStr)
 
@@ -999,35 +1001,39 @@ mako.directories = "templates"
 
 mgr = DataMgr()
 
+rootdir = os.path.dirname(os.path.abspath(__file__))
+accessLog = os.path.join(rootdir, 'exert_access.log')
+exertLog = os.path.join(rootdir, 'exert_error.log')
+
 conf = {
 	'/':
 	{
-		'tools.staticdir.root': os.path.dirname(os.path.abspath(__file__))},
+		'tools.staticdir.root': rootdir
+	},
 
-		'/css':
-		{
-			'tools.staticdir.on': True,
-			'tools.staticdir.dir': 'css'
-		},
+	'/css':
+	{
+		'tools.staticdir.on': True,
+		'tools.staticdir.dir': 'css'
+	},
 
-		'/images':
-		{
-			'tools.staticdir.on': True,
-			'tools.staticdir.dir': 'images',
-		},
+	'/images':
+	{
+		'tools.staticdir.on': True,
+		'tools.staticdir.dir': 'images',
+	},
 
-		'/media':
-		{
-			'tools.staticdir.on': True,
-			'tools.staticdir.dir': 'media',
-		}
+	'/media':
+	{
+		'tools.staticdir.on': True,
+		'tools.staticdir.dir': 'media',
+	}
 }
 
 cherrypy.config.update( {
 					   'server.socket_host': '0.0.0.0',
 					   'requests.show_tracebacks':False,
-					   'log.access_file': "exert_error.log",
-					   'log.error_file': "exert_access.log" } )
+					   'log.access_file':accessLog,
+					   'log.error_file':exertLog } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
-#cherrypy.engine.signals.subscribe()
 cherrypy.quickstart(ExertWeb(mgr), config=conf)
