@@ -1,6 +1,6 @@
 import cherrypy
-#from cherrypy.process.plugins import Daemonizer
-#Daemonizer(cherrypy.engine).subscribe()
+from cherrypy.process.plugins import Daemonizer
+Daemonizer(cherrypy.engine).subscribe()
 
 import datetime
 import json
