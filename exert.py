@@ -1033,7 +1033,7 @@ conf = {
 }
 
 cherrypy.config.update( {
-					   'server.socket_host': '0.0.0.0',
+					   'server.socket_host': '127.0.0.1',
 					   'requests.show_tracebacks':False,
 					   'log.access_file':accessLog,
 					   'log.error_file':exertLog } )
