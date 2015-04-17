@@ -24,6 +24,12 @@ rootdir = os.path.dirname(os.path.abspath(__file__))
 accessLog = os.path.join(rootdir, 'exert_access.log')
 exertLog = os.path.join(rootdir, 'exert_error.log')
 tempmodDir = os.path.join(rootdir, 'tempmod')
+loginHtmlFile = os.path.join(rootdir, 'login.html')
+createLoginHtmlFile = os.path.join(rootdir, 'create_login.html')
+mapSingleHtmlFile = os.path.join(rootdir, 'map_single.html')
+errorHtmlFile = os.path.join(rootdir, 'error.html')
+errorLoggedInHtmlFile = os.path.join(rootdir, 'error_logged_in.html')
+aboutHtmlFile = os.path.join(rootdir, 'about.html')
 
 SESSION_KEY = '_cp_username'
 MIN_PASSWORD_LEN = 8
@@ -841,14 +847,14 @@ class ExertWeb(object):
 
 	def renderPageForDeviceId(self, deviceStr, deviceId):
 		if deviceStr is None or deviceId is None:
-			myTemplate = Template(filename='error_logged_in.html', module_directory=tempmodDir)
+			myTemplate = Template(filename=errorLoggedInHtmlFile, module_directory=tempmodDir)
 			return myTemplate.render(error="There is no data for the specified user.")
 
 		activityId = self.mgr.db.getLatestActivityIdForDevice(deviceId)
 		locations = self.mgr.db.listLocations(deviceId, activityId)
 
 		if locations is None or len(locations) == 0:
-			myTemplate = Template(filename='error_logged_in.html', module_directory=tempmodDir)
+			myTemplate = Template(filename=errorLoggedInHtmlFile, module_directory=tempmodDir)
 			return myTemplate.render(error="There is no data for the specified user.")
 
 		route = ""
@@ -862,7 +868,7 @@ class ExertWeb(object):
 			centerLat = locations[0].latitude
 			centerLon = locations[0].longitude
 
-		myTemplate = Template(filename='map_single.html', module_directory=tempmodDir)
+		myTemplate = Template(filename=mapSingleHtmlFile, module_directory=tempmodDir)
 		return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
 
 	@cherrypy.expose
@@ -899,7 +905,7 @@ class ExertWeb(object):
 			for follower in followers:
 				list += follower + "\n"
 			
-			myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+			myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 			return myTemplate.render(error="foo.")
 		except:
 			cherrypy.response.status = 500
@@ -915,7 +921,7 @@ class ExertWeb(object):
 			for follower in followers:
 				list += follower + "\n"
 
-			myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+			myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 			return myTemplate.render(error="foo.")
 		except:
 			cherrypy.response.status = 500
@@ -930,7 +936,7 @@ class ExertWeb(object):
 			if self.mgr.inviteToFollow(username, target_username):
 				return ""
 			else:
-				myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 				return myTemplate.render(error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
@@ -945,7 +951,7 @@ class ExertWeb(object):
 			if self.mgr.requestToFollow(username, target_username):
 				return ""
 			else:
-				myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 				return myTemplate.render(error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
@@ -961,7 +967,7 @@ class ExertWeb(object):
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
 				return self.show_following(username)
 			else:
-				myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 				return myTemplate.render(error="Unable to authenticate the user.")
 		except:
 			cherrypy.response.status = 500
@@ -975,7 +981,7 @@ class ExertWeb(object):
 			if self.mgr.createUser(username, firstname, lastname, password1, password2, device_str):
 				return self.show_following(username)
 			else:
-				myTemplate = Template(filename='error.html', module_directory=tempmodDir)
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
 				return myTemplate.render(error="Unable to create the user.")
 		except:
 			cherrypy.response.status = 500
@@ -985,17 +991,17 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def login(self):
-		myTemplate = Template(filename='login.html', module_directory=tempmodDir)
+		myTemplate = Template(filename=loginHtmlFile, module_directory=tempmodDir)
 		return myTemplate.render()
 
 	@cherrypy.expose
 	def create_login(self):
-		myTemplate = Template(filename='create_login.html', module_directory=tempmodDir)
+		myTemplate = Template(filename=createLoginHtmlFile, module_directory=tempmodDir)
 		return myTemplate.render()
 
 	@cherrypy.expose
 	def about(self):
-		myTemplate = Template(filename='about.html', module_directory=tempmodDir)
+		myTemplate = Template(filename=aboutHtmlFile, module_directory=tempmodDir)
 		return myTemplate.render()
 
 	@cherrypy.expose
