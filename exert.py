@@ -21,7 +21,7 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 g_rootDir               = os.path.dirname(os.path.abspath(__file__))
-g_rootUrl               = 'exert-app.com/live'
+g_rootUrl               = 'http://exert-app.com/live'
 g_accessLog             = 'exert_access.log'
 g_exertLog              = 'exert_error.log'
 g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
@@ -718,9 +718,8 @@ class ExertWeb(object):
 			return response
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -788,9 +787,8 @@ class ExertWeb(object):
 			return response
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -815,9 +813,8 @@ class ExertWeb(object):
 			return response
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -842,9 +839,8 @@ class ExertWeb(object):
 			return response
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	def renderPageForDeviceId(self, deviceStr, deviceId):
@@ -884,9 +880,8 @@ class ExertWeb(object):
 				return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -900,9 +895,8 @@ class ExertWeb(object):
 				return self.renderPageForDeviceId(deviceId)
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
-			return ""
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 	
 	@cherrypy.expose
@@ -919,8 +913,8 @@ class ExertWeb(object):
 			return myTemplate.render(root_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -935,8 +929,8 @@ class ExertWeb(object):
 			return myTemplate.render(root_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -950,8 +944,8 @@ class ExertWeb(object):
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -965,8 +959,8 @@ class ExertWeb(object):
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -981,8 +975,8 @@ class ExertWeb(object):
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to authenticate the user.")
 		except:
 			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
@@ -994,9 +988,8 @@ class ExertWeb(object):
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to create the user.")
 		except:
-			cherrypy.response.status = 500
-			traceback.print_exc(file=sys.stdout)
-			cherrypy.log.error(sys.exc_info()[0])
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
 	@cherrypy.expose
