@@ -20,16 +20,17 @@ from cherrypy.process.plugins import Daemonizer
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
-rootdir               = os.path.dirname(os.path.abspath(__file__))
-accessLog             = 'exert_access.log'
-exertLog              = 'exert_error.log'
-tempmodDir            = 'tempmod'
-loginHtmlFile         = 'login.html'
-createLoginHtmlFile   = 'create_login.html'
-mapSingleHtmlFile     = 'map_single.html'
-errorHtmlFile         = 'error.html'
-errorLoggedInHtmlFile = 'error_logged_in.html'
-aboutHtmlFile         = 'about.html'
+g_rootDir               = os.path.dirname(os.path.abspath(__file__))
+g_rootUrl               = 'live'
+g_accessLog             = 'exert_access.log'
+g_exertLog              = 'exert_error.log'
+g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
+g_loginHtmlFile         = os.path.join(g_rootDir, 'login.html')
+g_createLoginHtmlFile   = os.path.join(g_rootDir, 'create_login.html')
+g_mapSingleHtmlFile     = os.path.join(g_rootDir, 'map_single.html')
+g_errorHtmlFile         = os.path.join(g_rootDir, 'error.html')
+g_errorLoggedInHtmlFile = os.path.join(g_rootDir, 'error_logged_in.html')
+g_aboutHtmlFile         = os.path.join(g_rootDir, 'about.html')
 
 SESSION_KEY = '_cp_username'
 MIN_PASSWORD_LEN = 8
@@ -848,15 +849,15 @@ class ExertWeb(object):
 
 	def renderPageForDeviceId(self, deviceStr, deviceId):
 		if deviceStr is None or deviceId is None:
-			myTemplate = Template(filename=errorLoggedInHtmlFile, module_directory=tempmodDir)
-			return myTemplate.render(error="There is no data for the specified user.")
+			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(oot_url=g_rootUrl, error="There is no data for the specified user.")
 
 		activityId = self.mgr.db.getLatestActivityIdForDevice(deviceId)
 		locations = self.mgr.db.listLocations(deviceId, activityId)
 
 		if locations is None or len(locations) == 0:
-			myTemplate = Template(filename=errorLoggedInHtmlFile, module_directory=tempmodDir)
-			return myTemplate.render(error="There is no data for the specified user.")
+			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(oot_url=g_rootUrl, error="There is no data for the specified user.")
 
 		route = ""
 		centerLat = 0
@@ -869,7 +870,7 @@ class ExertWeb(object):
 			centerLat = locations[0].latitude
 			centerLon = locations[0].longitude
 
-		myTemplate = Template(filename=mapSingleHtmlFile, module_directory=tempmodDir)
+		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
 
 	@cherrypy.expose
@@ -877,8 +878,8 @@ class ExertWeb(object):
 		try:
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			if deviceId is None:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to process request. Unknown device ID.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
@@ -893,8 +894,8 @@ class ExertWeb(object):
 		try:
 			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
 			if deviceId is None:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to process request. Unknown device ID.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceId)
 		except:
@@ -914,8 +915,8 @@ class ExertWeb(object):
 			for follower in followers:
 				list += follower + "\n"
 			
-			myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-			return myTemplate.render(error="foo.")
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(oot_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -930,8 +931,8 @@ class ExertWeb(object):
 			for follower in followers:
 				list += follower + "\n"
 
-			myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-			return myTemplate.render(error="foo.")
+			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(oot_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -945,8 +946,8 @@ class ExertWeb(object):
 			if self.mgr.inviteToFollow(username, target_username):
 				return ""
 			else:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to process request.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -960,8 +961,8 @@ class ExertWeb(object):
 			if self.mgr.requestToFollow(username, target_username):
 				return ""
 			else:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to process request.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -976,8 +977,8 @@ class ExertWeb(object):
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
 				return self.show_following(username)
 			else:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to authenticate the user.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(oot_url=g_rootUrl, error="Unable to authenticate the user.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -990,8 +991,8 @@ class ExertWeb(object):
 			if self.mgr.createUser(username, firstname, lastname, password1, password2, device_str):
 				return self.show_following(username)
 			else:
-				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
-				return myTemplate.render(error="Unable to create the user.")
+				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to create the user.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -1000,18 +1001,18 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	def login(self):
-		myTemplate = Template(filename=loginHtmlFile, module_directory=tempmodDir)
-		return myTemplate.render()
+		myTemplate = Template(filename=g_loginHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl)
 
 	@cherrypy.expose
 	def create_login(self):
-		myTemplate = Template(filename=createLoginHtmlFile, module_directory=tempmodDir)
-		return myTemplate.render()
+		myTemplate = Template(filename=g_createLoginHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl)
 
 	@cherrypy.expose
 	def about(self):
-		myTemplate = Template(filename=aboutHtmlFile, module_directory=tempmodDir)
-		return myTemplate.render()
+		myTemplate = Template(filename=g_aboutHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl)
 
 	@cherrypy.expose
 	def index(self):
@@ -1026,7 +1027,7 @@ mgr = DataMgr()
 conf = {
 	'/':
 	{
-		'tools.staticdir.root': rootdir
+		'tools.staticdir.root': g_rootDir
 	},
 
 	'/css':
@@ -1051,7 +1052,7 @@ conf = {
 cherrypy.config.update( {
 					   'server.socket_host': '127.0.0.1',
 					   'requests.show_tracebacks':False,
-					   'log.access_file':accessLog,
-					   'log.error_file':exertLog } )
+					   'log.access_file':g_accessLog,
+					   'log.error_file':g_exertLog } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 cherrypy.quickstart(ExertWeb(mgr), config=conf)
