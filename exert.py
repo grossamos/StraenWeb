@@ -850,14 +850,14 @@ class ExertWeb(object):
 	def renderPageForDeviceId(self, deviceStr, deviceId):
 		if deviceStr is None or deviceId is None:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(oot_url=g_rootUrl, error="There is no data for the specified user.")
+			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified user.")
 
 		activityId = self.mgr.db.getLatestActivityIdForDevice(deviceId)
 		locations = self.mgr.db.listLocations(deviceId, activityId)
 
 		if locations is None or len(locations) == 0:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(oot_url=g_rootUrl, error="There is no data for the specified user.")
+			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified user.")
 
 		route = ""
 		centerLat = 0
@@ -879,7 +879,7 @@ class ExertWeb(object):
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
@@ -895,7 +895,7 @@ class ExertWeb(object):
 			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceId)
 		except:
@@ -916,7 +916,7 @@ class ExertWeb(object):
 				list += follower + "\n"
 			
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(oot_url=g_rootUrl, error="foo.")
+			return myTemplate.render(root_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -932,7 +932,7 @@ class ExertWeb(object):
 				list += follower + "\n"
 
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(oot_url=g_rootUrl, error="foo.")
+			return myTemplate.render(root_url=g_rootUrl, error="foo.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -947,7 +947,7 @@ class ExertWeb(object):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -962,7 +962,7 @@ class ExertWeb(object):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(oot_url=g_rootUrl, error="Unable to process request.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -978,7 +978,7 @@ class ExertWeb(object):
 				return self.show_following(username)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(oot_url=g_rootUrl, error="Unable to authenticate the user.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to authenticate the user.")
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
