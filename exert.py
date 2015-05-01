@@ -21,7 +21,7 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 g_rootDir               = os.path.dirname(os.path.abspath(__file__))
-g_rootUrl               = 'live'
+g_rootUrl               = 'exert-app.com/live'
 g_accessLog             = 'exert_access.log'
 g_exertLog              = 'exert_error.log'
 g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
@@ -628,7 +628,7 @@ class DataMgr(object):
 			return False
 		return (dbHash == bcrypt.hashpw(password, dbHash))
 
-	def createUser(self, username, firstname, lastname, password1, password2, device_str):
+	def createUser(self, username, firstname, lastname, password1, password2, deviceStr):
 		if len(username) == 0:
 			return False
 		if len(firstname) == 0:
@@ -641,7 +641,7 @@ class DataMgr(object):
 			return False
 		if self.db.getUserHash(username) != 0:
 			return False
-		if len(device_str) == 0:
+		if len(deviceStr) == 0:
 			return False
 
 		salt = bcrypt.gensalt()
@@ -970,7 +970,7 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def login_submit(self, username, password, device_str, *args, **kw):
+	def login_submit(self, username, password, *args, **kw):
 		try:
 			if self.mgr.authenticateUser(username, password):
 				cherrypy.session.regenerate()
@@ -986,9 +986,9 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, firstname, lastname, password1, password2, device_str, *args, **kw):
+	def create_login_submit(self, username, firstname, lastname, password1, password2, deviceStr, *args, **kw):
 		try:
-			if self.mgr.createUser(username, firstname, lastname, password1, password2, device_str):
+			if self.mgr.createUser(username, firstname, lastname, password1, password2, deviceStr):
 				return self.show_following(username)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
