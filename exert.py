@@ -20,16 +20,16 @@ from cherrypy.process.plugins import Daemonizer
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
-rootdir = os.path.dirname(os.path.abspath(__file__))
-accessLog = os.path.join(rootdir, 'exert_access.log')
-exertLog = os.path.join(rootdir, 'exert_error.log')
-tempmodDir = os.path.join(rootdir, 'tempmod')
-loginHtmlFile = os.path.join(rootdir, 'login.html')
-createLoginHtmlFile = os.path.join(rootdir, 'create_login.html')
-mapSingleHtmlFile = os.path.join(rootdir, 'map_single.html')
-errorHtmlFile = os.path.join(rootdir, 'error.html')
-errorLoggedInHtmlFile = os.path.join(rootdir, 'error_logged_in.html')
-aboutHtmlFile = os.path.join(rootdir, 'about.html')
+rootdir               = os.path.dirname(os.path.abspath(__file__))
+accessLog             = 'exert_access.log'
+exertLog              = 'exert_error.log'
+tempmodDir            = 'tempmod'
+loginHtmlFile         = 'login.html'
+createLoginHtmlFile   = 'create_login.html'
+mapSingleHtmlFile     = 'map_single.html'
+errorHtmlFile         = 'error.html'
+errorLoggedInHtmlFile = 'error_logged_in.html'
+aboutHtmlFile         = 'about.html'
 
 SESSION_KEY = '_cp_username'
 MIN_PASSWORD_LEN = 8
@@ -241,7 +241,7 @@ class Database(object):
 			cherrypy.log.error("Unexpected empty object")
 			return None
 		if len(deviceStr) == 0:
-			cherrypy.log.error("username too short")
+			cherrypy.log.error("Device ID too short")
 			return None
 
 		try:
@@ -256,7 +256,7 @@ class Database(object):
 			cherrypy.log.error("Unexpected empty object")
 			return None
 		if len(deviceStr) == 0:
-			cherrypy.log.error("username too short")
+			cherrypy.log.error("Device ID too short")
 			return None
 
 		try:
@@ -323,13 +323,14 @@ class Database(object):
 			cherrypy.log.error("Unexpected empty object")
 			return
 		if len(deviceStr) == 0:
-			cherrypy.log.error("deviceStr too short")
+			cherrypy.log.error("Device ID too short")
 			return
 
 		try:
 			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
-			sql = "delete from metadata where deviceId = " + str(deviceId)
-			self.execute(sql)
+			if deviceId is not None:
+				sql = "delete from metadata where deviceId = " + str(deviceId)
+				self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			cherrypy.log.error(sys.exc_info()[0])
@@ -349,7 +350,7 @@ class Database(object):
 			cherrypy.log.error("Unexpected empty object")
 			return
 		if len(deviceStr) == 0:
-			cherrypy.log.error("deviceStr too short")
+			cherrypy.log.error("Device ID too short")
 			return
 
 		try:
@@ -875,7 +876,11 @@ class ExertWeb(object):
 	def device(self, deviceStr=None, *args, **kw):
 		try:
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
-			return self.renderPageForDeviceId(deviceStr, deviceId)
+			if deviceId is None:
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
+				return myTemplate.render(error="Unable to process request. Unknown device ID.")
+			else:
+				return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
@@ -887,7 +892,11 @@ class ExertWeb(object):
 	def user(self, username=None, *args, **kw):
 		try:
 			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
-			return self.renderPageForDeviceId(deviceId)
+			if deviceId is None:
+				myTemplate = Template(filename=errorHtmlFile, module_directory=tempmodDir)
+				return myTemplate.render(error="Unable to process request. Unknown device ID.")
+			else:
+				return self.renderPageForDeviceId(deviceId)
 		except:
 			cherrypy.response.status = 500
 			traceback.print_exc(file=sys.stdout)
