@@ -30,6 +30,7 @@ g_mapSingleHtmlFile     = os.path.join(g_rootDir, 'map_single.html')
 g_errorHtmlFile         = os.path.join(g_rootDir, 'error.html')
 g_errorLoggedInHtmlFile = os.path.join(g_rootDir, 'error_logged_in.html')
 g_aboutHtmlFile         = os.path.join(g_rootDir, 'about.html')
+g_dbFile                = os.path.join(g_rootDir, 'exert.sqlite')
 g_app                   = None
 
 SESSION_KEY = '_cp_username'
@@ -80,7 +81,7 @@ class Database(object):
 
 	def execute(self, sql):
 		try:
-			con = sqlite3.connect('exert.sqlite')
+			con = sqlite3.connect(g_dbFile)
 			with con:
 				cur = con.cursor()
 				cur.execute(sql)
