@@ -1,12 +1,10 @@
 import cherrypy
-from cherrypy.process.plugins import Daemonizer
-Daemonizer(cherrypy.engine).subscribe()
-
 import datetime
 import json
 import mako
 import os
 import re
+import signal
 import socket
 import sqlite3
 import sys
@@ -14,6 +12,7 @@ import threading
 import traceback
 import bcrypt
 
+from random import randint
 from dateutil.tz import tzlocal
 from cherrypy import tools
 from cherrypy.process.plugins import Daemonizer
@@ -31,9 +30,17 @@ g_mapSingleHtmlFile     = os.path.join(g_rootDir, 'map_single.html')
 g_errorHtmlFile         = os.path.join(g_rootDir, 'error.html')
 g_errorLoggedInHtmlFile = os.path.join(g_rootDir, 'error_logged_in.html')
 g_aboutHtmlFile         = os.path.join(g_rootDir, 'about.html')
+g_app                   = None
 
 SESSION_KEY = '_cp_username'
 MIN_PASSWORD_LEN = 8
+
+def signal_handler(signal, frame):
+	global g_app
+	print "Exiting..."
+	if g_app is not None:
+		g_app.terminate()
+	sys.exit(0)
 
 def check_auth(*args, **kwargs):
 	# A tool that looks in config for 'auth.require'. If found and it is not None, a login
@@ -554,9 +561,10 @@ class DataListener(threading.Thread):
 		self.notMetaData = [ "DeviceId", "ActivityId", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
-	def terminate():
+	def terminate(self):
+		print "Terminating DataListener"
 		self.stop.set()
-		sock.close()
+		self.db = None
 
 	def parseJsonStr(self, str):
 		try:
@@ -597,6 +605,8 @@ class DataListener(threading.Thread):
 		UDP_IP = ""
 		UDP_PORT = 5150
 
+		print "Starting app listener"
+
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((UDP_IP, UDP_PORT))
 
@@ -605,6 +615,7 @@ class DataListener(threading.Thread):
 			if line:
 				self.parseJsonStr(line)
 
+		print "App listener stopped"
 
 class DataMgr(object):
 	def __init__(self):
@@ -613,9 +624,11 @@ class DataMgr(object):
 		self.listener.start()
 		super(DataMgr, self).__init__()
 
-	def terminate():
-		self.db = NULL
-		self.listener = NULL
+	def terminate(self):
+		print "Terminating DataMgr"
+		self.listener.terminate()
+		self.listener = None
+		self.db = None
 
 	def authenticateUser(self, username, password):
 		if len(username) == 0:
@@ -687,9 +700,10 @@ class ExertWeb(object):
 		self.mgr = mgr
 		super(ExertWeb, self).__init__()
 
-	def terminate():
-		self.mgr.listener.stop.set()
-		self.mgr = NULL
+	def terminate(self):
+		print "Terminating ExertWeb"
+		self.mgr.terminate()
+		self.mgr = None
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
@@ -980,9 +994,9 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, firstname, lastname, password1, password2, deviceStr, *args, **kw):
+	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
 		try:
-			if self.mgr.createUser(username, firstname, lastname, password1, password2, deviceStr):
+			if self.mgr.createUser(username, firstname, lastname, password1, password2, ""):
 				return self.show_following(username)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -1012,29 +1026,35 @@ class ExertWeb(object):
 		return self.login()
 
 
+debug = False
+
+if debug:
+	g_rootUrl = ""
+else:
+	Daemonizer(cherrypy.engine).subscribe()
+
+signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
 mako.directories = "templates"
 
 mgr = DataMgr()
+g_app = ExertWeb(mgr)
 
 conf = {
 	'/':
 	{
 		'tools.staticdir.root': g_rootDir
 	},
-
 	'/css':
 	{
 		'tools.staticdir.on': True,
 		'tools.staticdir.dir': 'css'
 	},
-
 	'/images':
 	{
 		'tools.staticdir.on': True,
 		'tools.staticdir.dir': 'images',
 	},
-
 	'/media':
 	{
 		'tools.staticdir.on': True,
@@ -1044,8 +1064,8 @@ conf = {
 
 cherrypy.config.update( {
 					   'server.socket_host': '127.0.0.1',
-					   'requests.show_tracebacks':False,
-					   'log.access_file':g_accessLog,
-					   'log.error_file':g_exertLog } )
+					   'requests.show_tracebacks': False,
+					   'log.access_file': g_accessLog,
+					   'log.error_file': g_exertLog } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
-cherrypy.quickstart(ExertWeb(mgr), config=conf)
+cherrypy.quickstart(g_app, config=conf)
