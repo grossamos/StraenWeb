@@ -469,7 +469,11 @@ class ExertWeb(object):
 		return self.login()
 
 
-debug = True
+debug = False
+
+for arg in sys.argv:
+	if arg == 'debug':
+		debug = True
 
 if debug:
 	g_rootUrl = ""
