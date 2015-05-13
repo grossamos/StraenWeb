@@ -1,6 +1,7 @@
 import os
 import signal
 import socket
+import daemon
 import ExertDb
 
 class DataListener(object):
@@ -64,9 +65,10 @@ class DataListener(object):
 		print "App listener stopped"
 
 if __name__ == "__main__":
-	dir = os.path.dirname(os.path.realpath(__file__))
-	dbFile = os.path.join(dir, 'exert.sqlite')
-	db = ExertDb.Database(dbFile)
+	with daemon.DaemonContext():
+		dir = os.path.dirname(os.path.realpath(__file__))
+		dbFile = os.path.join(dir, 'exert.sqlite')
+		db = ExertDb.Database(dbFile)
 
-	listener = DataListener(db)
-	listener.run()
+		listener = DataListener(db)
+		listener.run()
