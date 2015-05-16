@@ -4,6 +4,10 @@ import socket
 import daemon
 import ExertDb
 
+def signal_handler(signal, frame):
+	print "Exiting..."
+	sys.exit(0)
+
 class DataListener(object):
 	running = True
 
@@ -64,11 +68,25 @@ class DataListener(object):
 
 		print "App listener stopped"
 
-if __name__ == "__main__":
-	with daemon.DaemonContext():
-		dir = os.path.dirname(os.path.realpath(__file__))
+def Start():
+	dir = os.path.dirname(os.path.realpath(__file__))
 		dbFile = os.path.join(dir, 'exert.sqlite')
+		
+		print "Opening the database at " + dbFile
 		db = ExertDb.Database(dbFile)
-
+		
 		listener = DataListener(db)
 		listener.run()
+
+if __name__ == "__main__":
+	debug = False
+
+	for arg in sys.argv:
+		if arg == 'debug':
+			debug = True
+
+	if debug:
+		Start()
+	else:
+		with daemon.DaemonContext():
+			Start()
