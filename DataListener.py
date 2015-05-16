@@ -1,6 +1,8 @@
+import json
 import os
 import signal
 import socket
+import sys
 import daemon
 import ExertDb
 
@@ -56,7 +58,7 @@ class DataListener(object):
 		UDP_IP = ""
 		UDP_PORT = 5150
 
-		print "Starting app listener"
+		print "Starting the app listener"
 
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((UDP_IP, UDP_PORT))
@@ -70,13 +72,13 @@ class DataListener(object):
 
 def Start():
 	dir = os.path.dirname(os.path.realpath(__file__))
-		dbFile = os.path.join(dir, 'exert.sqlite')
-		
-		print "Opening the database at " + dbFile
-		db = ExertDb.Database(dbFile)
-		
-		listener = DataListener(db)
-		listener.run()
+	dbFile = os.path.join(dir, 'exert.sqlite')
+	
+	print "Opening the database at " + dbFile
+	db = ExertDb.Database(dbFile)
+	
+	listener = DataListener(db)
+	listener.run()
 
 if __name__ == "__main__":
 	debug = False
