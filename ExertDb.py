@@ -16,7 +16,7 @@ class Database(object):
 		super(Database, self).__init__()
 
 	def logError(self, str):
-		pass
+		print str
 
 	def execute(self, sql):
 		try:
@@ -26,7 +26,7 @@ class Database(object):
 				cur.execute(sql)
 				return cur.fetchall()
 		except:
-			self.logError("Error opening the database")
+			self.logError("Database error:\n\tfile = " + dbFile + "\n\tsql = " + sql)
 		finally:
 			if con:
 				con.close()
@@ -299,10 +299,17 @@ class Database(object):
 		if len(deviceStr) == 0:
 			self.logError("Device ID too short")
 			return
+		if len(key) == 0:
+			self.logError("Metadata key too short")
+			return
 
 		try:
+			if isinstance(value, str) or isinstance(value, unicode):
+				valueStr = "'" + value + "'"
+			else:
+				valueStr = str(value)
 			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
-			sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + str(value) + ")"
+			sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", '" + key + "', " + valueStr + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
@@ -363,7 +370,6 @@ class Database(object):
 		if altitude is None:
 			self.logError("Unexpected empty object")
 			return
-
 		try:
 			deviceId = self.getDeviceIdFromDeviceStr(deviceStr)
 			sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"

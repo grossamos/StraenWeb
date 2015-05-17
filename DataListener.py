@@ -3,7 +3,6 @@ import os
 import signal
 import socket
 import sys
-import daemon
 import ExertDb
 
 def signal_handler(signal, frame):
@@ -11,6 +10,7 @@ def signal_handler(signal, frame):
 	sys.exit(0)
 
 class DataListener(object):
+	db = None
 	running = True
 
 	def __init__(self, db):
@@ -72,10 +72,9 @@ class DataListener(object):
 
 def Start():
 	dir = os.path.dirname(os.path.realpath(__file__))
-	dbFile = os.path.join(dir, 'exert.sqlite')
 	
-	print "Opening the database at " + dbFile
-	db = ExertDb.Database(dbFile)
+	print "Opening the database in " + dir
+	db = ExertDb.Database(dir)
 	
 	listener = DataListener(db)
 	listener.run()
@@ -90,5 +89,7 @@ if __name__ == "__main__":
 	if debug:
 		Start()
 	else:
+		import daemon
+
 		with daemon.DaemonContext():
 			Start()
