@@ -324,7 +324,7 @@ class ExertWeb(object):
 			centerLon = locations[0].longitude
 
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
+		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
 
 	@cherrypy.expose
 	def device(self, deviceStr=None, *args, **kw):
@@ -472,7 +472,7 @@ class ExertWeb(object):
 debug = False
 
 for arg in sys.argv:
-	if arg == 'debug':
+	if arg == 'debug' or arg == '--debug':
 		debug = True
 
 if debug:

@@ -152,20 +152,20 @@ ${route}
 			infoWindow.open(map,marker);
 		};
 
-		//var checkForUpdates = function()
-		//{
-		//	$.ajax({ type: 'POST', url: "/updatetrack/${deviceStr}/${activityId}/${routeLen}", success: appendToTrack, dataType: "application/json" });
-		//	$.ajax({ type: 'POST', url: "/updatemetadata/${deviceStr}/${activityId}", success: updateMetadata, dataType: "application/json" });
-		//};
+		var checkForUpdates = function()
+		{
+			$.ajax({ type: 'POST', url: "${root_url}/updatetrack/${deviceStr}/${activityId}/${routeLen}", success: appendToTrack, dataType: "application/json" });
+			$.ajax({ type: 'POST', url: "${root_url}/updatemetadata/${deviceStr}/${activityId}", success: updateMetadata, dataType: "application/json" });
+		};
 
-		$.ajax({ type: 'POST', url: "/updatemetadata/${deviceStr}/${activityId}", success: updateMetadata, dataType: "application/json" });
+		$.ajax({ type: 'POST', url: "${root_url}/updatemetadata/${deviceStr}/${activityId}", success: updateMetadata, dataType: "application/json" });
 
 		//setInterval(checkForUpdates, 15000);
 	</script>
 
 </head>
 
-<link rel="shortcut icon" href="/media/favicon.ico" >
+<link rel="shortcut icon" href="${root_url}/media/favicon.ico" >
 
 <body>
 	<div id="map-canvas"/>
