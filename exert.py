@@ -208,7 +208,7 @@ class ExertWeb(object):
 				response += json.dumps({"name":"Time", "value":valueStr})
 
 			key = "Distance"
-			distance = self.mgr.db.getLatestMetaData("Distance", deviceId)
+			distance = self.mgr.db.getLatestMetaData(key, deviceId)
 			if distance != None:
 				valueStr = "{:.2f}".format(distance)
 				if len(response) > 1:
@@ -216,7 +216,7 @@ class ExertWeb(object):
 				response += json.dumps({"name":key, "value":valueStr})
 
 			key = "Avg. Speed"
-			speed = self.mgr.db.getLatestMetaData("Avg. Speed", deviceId)
+			speed = self.mgr.db.getLatestMetaData(key, deviceId)
 			if speed != None:
 				valueStr = "{:.2f}".format(speed)
 				if len(response) > 1:
@@ -224,7 +224,7 @@ class ExertWeb(object):
 				response += json.dumps({"name":key, "value":valueStr})
 
 			key = "Moving Speed"
-			speed = self.mgr.db.getLatestMetaData("Moving Speed", deviceId)
+			speed = self.mgr.db.getLatestMetaData(key, deviceId)
 			if speed != None:
 				valueStr = "{:.2f}".format(speed)
 				if len(response) > 1:
@@ -232,13 +232,21 @@ class ExertWeb(object):
 				response += json.dumps({"name":key, "value":valueStr})
 
 			key = "Avg. Heart Rate"
-			hr = self.mgr.db.getLatestMetaData("Avg. Heart Rate", deviceId)
+			hr = self.mgr.db.getLatestMetaData(key, deviceId)
 			if hr != None:
 				valueStr = "{:.2f} bpm".format(hr)
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":key, "value":valueStr})
 
+			key = "Avg. Power"
+			power = self.mgr.db.getLatestMetaData(key, deviceId)
+			if power != None:
+				valueStr = "{:.2f} watts".format(power)
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":key, "value":valueStr})
+			
 			response += "]"
 
 			return response
