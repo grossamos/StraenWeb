@@ -13,10 +13,13 @@ class Database(object):
 
 	def __init__(self, rootDir):
 		self.dbFile = os.path.join(rootDir, 'exert.sqlite')
+		self.logFileName = os.path.join(rootDir, 'ExertDb.log')
 		super(Database, self).__init__()
 
 	def logError(self, str):
-		print str
+		with open(self.logFileName, 'a') as f:
+			f.write(str + "\n")
+			f.close()
 
 	def execute(self, sql):
 		try:
@@ -242,6 +245,13 @@ class Database(object):
 		return None
 
 	def updateDevice(self, deviceId, userId):
+		if deviceId is None:
+			self.logError("Unexpected empty object")
+			return None
+		if userId is None:
+			self.logError("Unexpected empty object")
+			return None
+
 		try:
 			sql = "update device set userId = " + str(userId) + " where id = " + str(deviceId)
 			rows = self.execute(sql)
