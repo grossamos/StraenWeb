@@ -30,7 +30,7 @@ class DataListener(object):
 	def __init__(self, db):
 		self.db = db
 		self.db.create()
-		self.notMetaData = [ "DeviceId", "ActivityId", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
+		self.notMetaData = [ "DeviceId", "ActivityId", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
 	def parseJsonStr(self, str):
@@ -38,9 +38,18 @@ class DataListener(object):
 			decoder = json.JSONDecoder()
 			decodedObj = json.loads(str)
 
-			# Parse the location data
+			# Parse required identifiers
 			deviceId = decodedObj["DeviceId"]
 			activityId = decodedObj["ActivityId"]
+			
+			# Parse optional identifiers
+			userName = ""
+			try:
+				userName = decodedObj["User Name"]
+			except:
+				pass
+
+			# Parse the location data
 			lat = decodedObj["Latitude"]
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
@@ -55,6 +64,12 @@ class DataListener(object):
 				value = item[1]
 				if not key in self.notMetaData:
 					self.db.insertMetadata(deviceId, activityId, key, value)
+				
+			# Update the user device association
+			if len(userName):
+				userDbId = self.db.getUserIdFromUserName(userName)
+				deviceDbId = self.db.getDeviceIdFromDeviceStr(deviceId)
+				self.db.updateDevice(deviceDbId, userDbId)
 		except ValueError:
 			Log("ValueError in JSON data.")
 		except KeyError, e:
