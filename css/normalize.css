@@ -58,10 +58,8 @@ audio:not([controls]) {
    ========================================================================== */
 
 /*
- * 1. Corrects text resizing oddly in IE6/7 when body `font-size` is set using
- *    `em` units.
- * 2. Prevents iOS text size adjust after orientation change, without disabling
- *    user zoom.
+ * 1. Corrects text resizing oddly in IE6/7 when body `font-size` is set using `em` units.
+ * 2. Prevents iOS text size adjust after orientation change, without disabling user zoom.
  */
 
 html {
@@ -402,11 +400,9 @@ input {
 }
 
 /*
- * 1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio`
- *    and `video` controls.
+ * 1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio` and `video` controls.
  * 2. Corrects inability to style clickable `input` types in iOS.
- * 3. Improves usability and consistency of cursor style between image-type
- *    `input` and others.
+ * 3. Improves usability and consistency of cursor style between image-type `input` and others.
  * 4. Removes inner spacing in IE7 without affecting normal text inputs.
  *    Known issue: inner spacing remains in IE6.
  */

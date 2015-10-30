@@ -340,7 +340,7 @@ class ExertWeb(object):
 			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceStr, deviceId)
 		except:
@@ -355,7 +355,7 @@ class ExertWeb(object):
 			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request. Unknown device ID.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
 			else:
 				return self.renderPageForDeviceId(deviceId)
 		except:
@@ -375,7 +375,7 @@ class ExertWeb(object):
 				list += follower + "\n"
 			
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="foo.")
+			return myTemplate.render(root_url=g_rootUrl, error="Error rendering the list of users who are following you.")
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -391,7 +391,7 @@ class ExertWeb(object):
 				list += follower + "\n"
 
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="foo.")
+			return myTemplate.render(root_url=g_rootUrl, error="Error rendering the list of followed users.")
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -406,7 +406,7 @@ class ExertWeb(object):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -421,7 +421,7 @@ class ExertWeb(object):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process request.")
+				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
