@@ -3,6 +3,7 @@ import os
 import signal
 import socket
 import sys
+import time
 import ExertDb
 
 g_debug = False
@@ -33,7 +34,7 @@ class DataListener(object):
 		self.notMetaData = [ "DeviceId", "ActivityId", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
-	def parseJsonStr(self, str):
+	def parse_json_str(self, str):
 		try:
 			decoder = json.JSONDecoder()
 			decodedObj = json.loads(str)
@@ -41,7 +42,7 @@ class DataListener(object):
 			# Parse required identifiers
 			deviceId = decodedObj["DeviceId"]
 			activityId = decodedObj["ActivityId"]
-			
+
 			# Parse optional identifiers
 			userName = ""
 			try:
@@ -53,18 +54,23 @@ class DataListener(object):
 			lat = decodedObj["Latitude"]
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
-			self.db.insertLocation(deviceId, activityId, lat, lon, alt)
+			self.db.insert_location(deviceId, activityId, lat, lon, alt)
 
-			# Clear the metadata
-			self.db.clearMetadata(deviceId)
+			# Parse the metadata looking for the timestamp
+			dataTime = time.time()
+			try:
+				timeStr = decodedObj["Time"]
+				dateTime = int(timeStr)
+			except:
+				pass
 
-			# Parse the metadata
+			# Parse the rest of the metadata
 			for item in decodedObj.iteritems():
 				key = item[0]
 				value = item[1]
 				if not key in self.notMetaData:
-					self.db.insertMetadata(deviceId, activityId, key, value)
-				
+					self.db.insert_metadata(deviceId, activityId, dateTime, key, value)
+
 			# Update the user device association
 			if len(userName):
 				userDbId = self.db.getUserIdFromUserName(userName)
@@ -77,7 +83,7 @@ class DataListener(object):
 		except:
 			Log("Error parsing JSON data.")
 
-	def readLine(self, sock):
+	def read_line(self, sock):
 		while self.running:
 			data, addr = sock.recvfrom(1024)
 			return data
@@ -93,9 +99,9 @@ class DataListener(object):
 		sock.bind((UDP_IP, UDP_PORT))
 
 		while self.running:
-			line = self.readLine(sock)
+			line = self.read_line(sock)
 			if line:
-				self.parseJsonStr(line)
+				self.parse_json_str(line)
 
 		Log("App listener stopped")
 

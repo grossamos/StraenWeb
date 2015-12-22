@@ -73,65 +73,64 @@ class DataMgr(object):
 	def terminate(self):
 		self.db = None
 
-	def authenticateUser(self, username, password):
-		if len(username) == 0:
-			return False
+	def authenticate_user(self, email, password):
+		if len(email) == 0:
+			return False, "An email address was not provided."
 		if len(password) < MIN_PASSWORD_LEN:
-			return False
+			return False, ""
 
-		dbHash = self.db.getUserHash(username)
+		dbHash = self.db.get_user_hash(email)
 		if dbHash == 0:
-			return False
-		return (dbHash == bcrypt.hashpw(password, dbHash))
+			return False, "The user could not be found."
+		loggedIn = (dbHash == bcrypt.hashpw(password, dbHash))
+		return loggedIn, "The user has been logged in."
 
-	def createUser(self, username, firstname, lastname, password1, password2, deviceStr):
-		if len(username) == 0:
-			return False
-		if len(firstname) == 0:
-			return False
-		if len(lastname) == 0:
-			return False
+	def create_user(self, email, realname, password1, password2, deviceStr):
+		if len(email) == 0:
+			return False, "Email address not provided."
+		if len(realname) == 0:
+			return False, "Name not provided."
 		if len(password1) < MIN_PASSWORD_LEN:
-			return False
+			return False, "The password is too short."
 		if password1 != password2:
-			return False
-		if self.db.getUserHash(username) != 0:
-			return False
-		if len(deviceStr) == 0:
-			return False
+			return False, "The passwords do not match."
+		if self.db.get_user_hash(email) != 0:
+			return False, "The user already exists."
 
 		salt = bcrypt.gensalt()
 		hash = bcrypt.hashpw(password1, salt)
-		if not self.db.insertUser(username, firstname, lastname, hash):
-			return False
+		if not self.db.insert_user(email, realname, hash):
+			return False, ""
 
-		userId = self.db.getUserIdFromUserName(username)
-		deviceId = self.db.getDeviceIdFromDeviceStr(deviceStr)
-		self.db.updateDevice(deviceId, userId)
-			
-		return True
+		userId = self.db.get_user_id_from_username(email)
 
-	def listUsersFollowedBy(username):
-		return self.db.listUsersFollowedBy(username)
+		if len(deviceStr) > 0:
+			deviceId = self.db.get_device_id_from_device_str(deviceStr)
+			self.db.update_device(deviceId, userId)
+		
+		return True, "The user was created."
 
-	def listUsersFollowing(username):
-		return self.db.listUsersFollowing(username)
+	def list_users_followed_by(self, email):
+		return self.db.list_users_followed_by(email)
 
-	def inviteToFollow(self, username, followedByName):
-		if len(username) == 0:
+	def list_users_following(self, email):
+		return self.db.list_users_following(email)
+
+	def invite_to_follow(self, email, followedByName):
+		if len(email) == 0:
 			return False
 		if len(followedByName) == 0:
 			return False
 
-		return self.db.insertToFollowedByList(username, followedByName)
+		return self.db.insert_to_followed_by_list(email, followedByName)
 
-	def requestToFollow(self, username, followingName):
-		if len(username) == 0:
+	def request_to_follow(self, email, followingName):
+		if len(email) == 0:
 			return False
 		if len(followingName) == 0:
 			return False
 
-		return self.db.insertToFollowingList(username, followedByName)
+		return self.db.insert_to_following_list(email, followedByName)
 
 class ExertWeb(object):
 	_cp_config = {
@@ -159,8 +158,8 @@ class ExertWeb(object):
 			return ""
 		
 		try:
-			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
-			locations = self.mgr.db.listLastLocations(deviceId, activityId, int(num))
+			deviceId = self.mgr.db.get_device_id_from_device_str(deviceStr)
+			locations = self.mgr.db.list_last_locations(deviceId, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -188,66 +187,72 @@ class ExertWeb(object):
 			return ""
 
 		try:
-			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
+			deviceId = self.mgr.db.get_device_id_from_device_str(deviceStr)
+			activityId = self.mgr.db.get_latest_activity_id_for_device(deviceId)
+			if activityId == 0:
+				return ""
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
 			
-			key = "Name"
-			name = self.mgr.db.getLatestMetaData(key, deviceId)
-			if name != None:
-				response += json.dumps({"name":key, "value":name})
+			namesKey = "Name"
+			names = self.mgr.db.get_metadata(namesKey, deviceId, activityId)
+			if names != None and len(names) > 0:
+				response += json.dumps({"name":namesKey, "value":names[-1]})
 
-			key = "Time"
-			time = self.mgr.db.getLatestMetaData(key, deviceId)
-			if time != None:
+			timesKey = "Time"
+			times = self.mgr.db.get_metadata(timesKey, deviceId, activityId)
+			if times != None and len(times) > 0:
 				localtimezone = tzlocal()
-				valueStr = datetime.datetime.fromtimestamp(time/1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
+				valueStr = datetime.datetime.fromtimestamp(times[-1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":"Time", "value":valueStr})
+				response += json.dumps({"name":timesKey, "value":valueStr})
 
-			key = "Distance"
-			distance = self.mgr.db.getLatestMetaData(key, deviceId)
-			if distance != None:
-				valueStr = "{:.2f}".format(distance)
+			distancesKey = "Distance"
+			distances = self.mgr.db.get_metadata(distancesKey, deviceId, activityId)
+			if distances != None and len(distances) > 0:
+				valueStr = "{:.2f}".format(distances[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":key, "value":valueStr})
+				response += json.dumps({"name":distancesKey, "value":valueStr})
 
-			key = "Avg. Speed"
-			speed = self.mgr.db.getLatestMetaData(key, deviceId)
-			if speed != None:
-				valueStr = "{:.2f}".format(speed)
+			avgSpeedsKey = "Avg. Speed"
+			avgSpeeds = self.mgr.db.get_metadata(avgSpeedsKey, deviceId, activityId)
+			if avgSpeeds != None and len(avgSpeeds) > 0:
+				valueStr = "{:.2f}".format(avgSpeeds[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":key, "value":valueStr})
+				response += json.dumps({"name":avgSpeedsKey, "value":valueStr})
 
-			key = "Moving Speed"
-			speed = self.mgr.db.getLatestMetaData(key, deviceId)
-			if speed != None:
-				valueStr = "{:.2f}".format(speed)
+			movingSpeedsKey = "Moving Speed"
+			movingSpeeds = self.mgr.db.get_metadata(movingSpeedsKey, deviceId, activityId)
+			if movingSpeeds != None and len(movingSpeeds) > 0:
+				valueStr = "{:.2f}".format(movingSpeeds[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":key, "value":valueStr})
+				response += json.dumps({"name":movingSpeedsKey, "value":valueStr})
+				
+			heartRatesKey = "Avg. Heart Rate"
+			heartRates = self.mgr.db.get_metadata(heartRatesKey, deviceId, activityId)
+			if heartRates != None and len(heartRates) > 0:
+				valueStr = "{:.2f} bpm".format(heartRates[-1])
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":heartRatesKey, "value":valueStr})
 
-			key = "Avg. Heart Rate"
-			hr = self.mgr.db.getLatestMetaData(key, deviceId)
-			if hr != None:
-				valueStr = "{:.2f} bpm".format(hr)
+			powersKey = "Avg. Power"
+			powers = self.mgr.db.get_metadata(powersKey, deviceId, activityId)
+			if powers != None and len(powers) > 0:
+				valueStr = "{:.2f} watts".format(powers[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":key, "value":valueStr})
+				response += json.dumps({"name":powersKey, "value":valueStr})
 
-			key = "Avg. Power"
-			power = self.mgr.db.getLatestMetaData(key, deviceId)
-			if power != None:
-				valueStr = "{:.2f} watts".format(power)
-				if len(response) > 1:
-					response += ","
-				response += json.dumps({"name":key, "value":valueStr})
-			
 			response += "]"
+
+#			fileName = deviceStr + ".csv"
+#			file = open(fileName, 'w+')
 
 			return response
 		except:
@@ -258,12 +263,12 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_following(self, username=None, num=None, *args, **kw):
-		if username is None:
+	def liser_users_following(self, email=None, num=None, *args, **kw):
+		if email is None:
 			return ""
 		
 		try:
-			followers = self.mgr.db.listUsersFollowing(username)
+			followers = self.mgr.list_users_following(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -284,12 +289,12 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_followed_by(self, username=None, num=None, *args, **kw):
-		if username is None:
+	def liser_users_followed_by(self, email=None, num=None, *args, **kw):
+		if email is None:
 			return ""
 
 		try:
-			followers = self.mgr.db.listUsersFollowedBy(username)
+			followers = self.mgr.list_users_followed_by(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -308,24 +313,24 @@ class ExertWeb(object):
 			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 		return ""
 
-	def renderPageForDeviceId(self, deviceStr, deviceId):
+	def render_page_for_device_id(self, deviceStr, deviceId):
 		if deviceStr is None or deviceId is None:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified user.")
+			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
 
-		activityId = self.mgr.db.getLatestActivityIdForDevice(deviceId)
-		locations = self.mgr.db.listLocations(deviceId, activityId)
+		activityId = self.mgr.db.get_latest_activity_id_for_device(deviceId)
+		locations = self.mgr.db.list_locations(deviceId, activityId)
 
 		if locations is None or len(locations) == 0:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified user.")
+			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
 
 		route = ""
 		centerLat = 0
 		centerLon = 0
 
 		for location in locations:
-			route += "\t\t\t\tnew google.maps.LatLng(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
+			route += "\t\t\t\tnewCoord(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
 
 		if len(locations) > 0:
 			centerLat = locations[0].latitude
@@ -334,15 +339,42 @@ class ExertWeb(object):
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
 
+	def render_page_for_multiple_device_ids(self, deviceIds, userId):
+		if deviceIds is None:
+			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, error="No device IDs were specified.")
+
+		routeCoordinates = ""
+		centerLat = 0
+		centerLon = 0
+		deviceIndex = 0
+
+		for deviceId in deviceIds:
+			activityId = self.mgr.db.get_latest_activity_id_for_device(deviceId)
+			locations = self.mgr.db.list_locations(deviceId, activityId)
+		
+			routeCoordinates += "\t\t\tvar routeCoordinates" + str(deviceIndex) + " = \n\t\t\t[\n"
+			for location in locations:
+				routeCoordinates += "\t\t\t\tnewCoord(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
+			routeCoordinates += "\t\t\t];\n"
+			routeCoordinates += "\t\t\taddRoute(routeCoordinates" + str(deviceIndex) + ");\n\n"
+
+			if len(locations) > 0:
+				centerLat = locations[0].latitude
+				centerLon = locations[0].longitude
+		
+		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, centerLat=centerLat, centerLon=centerLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
+
 	@cherrypy.expose
 	def device(self, deviceStr=None, *args, **kw):
 		try:
-			deviceId = self.mgr.db.getDeviceIdFromDeviceStr(deviceStr)
+			deviceId = self.mgr.db.get_device_id_from_device_str(deviceStr)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
 			else:
-				return self.renderPageForDeviceId(deviceStr, deviceId)
+				return self.render_page_for_device_id(deviceStr, deviceId)
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -350,14 +382,14 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def user(self, username=None, *args, **kw):
+	def user(self, email=None, *args, **kw):
 		try:
-			deviceId, deviceStr = self.mgr.db.getDeviceFromUsername(username)
+			deviceId, deviceStr = self.mgr.db.get_device_from_username(email)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
 			else:
-				return self.renderPageForDeviceId(deviceId)
+				return self.render_page_for_device_id(deviceId)
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -366,11 +398,11 @@ class ExertWeb(object):
 	
 	@cherrypy.expose
 	@require()
-	def show_followed_by(self, username=None, *args, **kw):
+	def show_followed_by(self, email=None, *args, **kw):
 		try:
 			list = ""
 
-			followers = self.mgr.listUsersFollowedBy(username)
+			followers = self.mgr.list_users_followed_by(email)
 			for follower in followers:
 				list += follower + "\n"
 			
@@ -384,9 +416,9 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	@require()
-	def show_following(self, username=None, *args, **kw):
+	def show_following(self, email=None, *args, **kw):
 		try:
-			followers = self.mgr.listUsersFollowing(username)
+			followers = self.mgr.list_users_following(email)
 			for follower in followers:
 				list += follower + "\n"
 
@@ -400,9 +432,9 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	@require()
-	def invite_to_follow(self, username=None, target_username=None, *args, **kw):
+	def invite_to_follow(self, email=None, target_email=None, *args, **kw):
 		try:
-			if self.mgr.inviteToFollow(username, target_username):
+			if self.mgr.invite_to_follow(email, target_email):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -415,9 +447,9 @@ class ExertWeb(object):
 
 	@cherrypy.expose
 	@require()
-	def request_to_follow(self, username=None, target_username=None, *args, **kw):
+	def request_to_follow(self, email=None, target_email=None, *args, **kw):
 		try:
-			if self.mgr.requestToFollow(username, target_username):
+			if self.mgr.request_to_follow(email, target_email):
 				return ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -429,15 +461,20 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def login_submit(self, username, password, *args, **kw):
+	def login_submit(self, email, password, *args, **kw):
 		try:
-			if self.mgr.authenticateUser(username, password):
+			userLoggedIn, infoStr = self.mgr.authenticate_user(email, password)
+			if userLoggedIn:
 				cherrypy.session.regenerate()
-				cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
-				return self.show_following(username)
+				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
+				return self.show_following(email)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to authenticate the user.")
+				errorMsg = "Unable to authenticate the user."
+				if len(infoStr) > 0:
+					errorMsg += " "
+					errorMsg += infoStr
+				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -445,13 +482,20 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, username, firstname, lastname, password1, password2, *args, **kw):
+	def create_login_submit(self, email, realname, password1, password2, *args, **kw):
 		try:
-			if self.mgr.createUser(username, firstname, lastname, password1, password2, ""):
-				return self.show_following(username)
+			userCreated, infoStr = self.mgr.create_user(email, realname, password1, password2, "")
+			if userCreated:
+				cherrypy.session.regenerate()
+				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
+				return self.show_following(email)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to create the user.")
+				errorMsg = "Unable to create the user."
+				if len(infoStr) > 0:
+					errorMsg += " "
+					errorMsg += infoStr
+				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
 		except:
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
