@@ -32,6 +32,15 @@ g_app                   = None
 SESSION_KEY = '_cp_username'
 MIN_PASSWORD_LEN = 8
 
+NAME_KEY = "Name"
+TIME_KEY = "Time"
+DISTANCE_KEY = "Distance"
+CADENCE_KEY = "Cadence"
+AVG_SPEED_KEY = "Avg. Speed"
+MOVING_SPEED_KEY = "Moving Speed"
+HEART_RATE_KEY = "Avg. Heart Rate"
+POWER_KEY = "Avg. Power"
+
 def signal_handler(signal, frame):
 	global g_app
 	print "Exiting..."
@@ -149,16 +158,18 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def updatetrack(self, deviceStr=None, activityId=None, num=None, *args, **kw):
+	def updatetrack(self, deviceStr=None, num=None, *args, **kw):
 		if deviceStr is None:
-			return ""
-		if activityId is None:
 			return ""
 		if num is None:
 			return ""
 		
 		try:
 			deviceId = self.mgr.db.get_device_id_from_device_str(deviceStr)
+			activityId = self.mgr.db.get_latest_activity_id_for_device(deviceId)
+			if activityId == 0:
+				return ""
+
 			locations = self.mgr.db.list_last_locations(deviceId, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
@@ -180,10 +191,8 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def updatemetadata(self, deviceStr=None, activityId=None, *args, **kw):
+	def updatemetadata(self, deviceStr=None, *args, **kw):
 		if deviceStr is None:
-			return ""
-		if activityId is None:
 			return ""
 
 		try:
@@ -195,64 +204,55 @@ class ExertWeb(object):
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
 			
-			namesKey = "Name"
-			names = self.mgr.db.get_metadata(namesKey, deviceId, activityId)
+			names = self.mgr.db.get_metadata(NAME_KEY, deviceId, activityId)
 			if names != None and len(names) > 0:
-				response += json.dumps({"name":namesKey, "value":names[-1]})
+				response += json.dumps({"name":NAME_KEY, "value":names[-1][1]})
 
-			timesKey = "Time"
-			times = self.mgr.db.get_metadata(timesKey, deviceId, activityId)
+			times = self.mgr.db.get_metadata(TIME_KEY, deviceId, activityId)
 			if times != None and len(times) > 0:
+				if len(response) > 1:
+					response += ","
 				localtimezone = tzlocal()
-				valueStr = datetime.datetime.fromtimestamp(times[-1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
-				if len(response) > 1:
-					response += ","
-				response += json.dumps({"name":timesKey, "value":valueStr})
+				valueStr = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
+				response += json.dumps({"name":TIME_KEY, "value":valueStr})
 
-			distancesKey = "Distance"
-			distances = self.mgr.db.get_metadata(distancesKey, deviceId, activityId)
+			distances = self.mgr.db.get_metadata(DISTANCE_KEY, deviceId, activityId)
 			if distances != None and len(distances) > 0:
-				valueStr = "{:.2f}".format(distances[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":distancesKey, "value":valueStr})
+				response += json.dumps({"name":DISTANCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			avgSpeedsKey = "Avg. Speed"
-			avgSpeeds = self.mgr.db.get_metadata(avgSpeedsKey, deviceId, activityId)
+			avgSpeeds = self.mgr.db.get_metadata(AVG_SPEED_KEY, deviceId, activityId)
 			if avgSpeeds != None and len(avgSpeeds) > 0:
-				valueStr = "{:.2f}".format(avgSpeeds[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":avgSpeedsKey, "value":valueStr})
+				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(avgSpeeds[-1][1])})
 
-			movingSpeedsKey = "Moving Speed"
-			movingSpeeds = self.mgr.db.get_metadata(movingSpeedsKey, deviceId, activityId)
+			movingSpeeds = self.mgr.db.get_metadata(MOVING_SPEED_KEY, deviceId, activityId)
 			if movingSpeeds != None and len(movingSpeeds) > 0:
-				valueStr = "{:.2f}".format(movingSpeeds[-1])
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":movingSpeedsKey, "value":valueStr})
-				
-			heartRatesKey = "Avg. Heart Rate"
-			heartRates = self.mgr.db.get_metadata(heartRatesKey, deviceId, activityId)
-			if heartRates != None and len(heartRates) > 0:
-				valueStr = "{:.2f} bpm".format(heartRates[-1])
-				if len(response) > 1:
-					response += ","
-				response += json.dumps({"name":heartRatesKey, "value":valueStr})
+				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(movingSpeeds[-1][1])})
 
-			powersKey = "Avg. Power"
-			powers = self.mgr.db.get_metadata(powersKey, deviceId, activityId)
-			if powers != None and len(powers) > 0:
-				valueStr = "{:.2f} watts".format(powers[-1])
+			heartRates = self.mgr.db.get_metadata(HEART_RATE_KEY, deviceId, activityId)
+			if heartRates != None and len(heartRates) > 0:
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":powersKey, "value":valueStr})
+				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heartRates[-1][1])})
+
+			cadences = self.mgr.db.get_metadata(CADENCE_KEY, deviceId, activityId)
+			if cadences != None and len(cadences) > 0:
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
+			
+			powers = self.mgr.db.get_metadata(POWER_KEY, deviceId, activityId)
+			if powers != None and len(powers) > 0:
+				if len(response) > 1:
+					response += ","
+				response += json.dumps({"name":POWER_KEY, "value":"{:.2f} watts".format(powers[-1][1])})
 
 			response += "]"
-
-#			fileName = deviceStr + ".csv"
-#			file = open(fileName, 'w+')
 
 			return response
 		except:
@@ -336,8 +336,28 @@ class ExertWeb(object):
 			centerLat = locations[0].latitude
 			centerLon = locations[0].longitude
 
+		movingSpeeds = self.mgr.db.get_metadata(MOVING_SPEED_KEY, deviceId, activityId)
+		movingSpeedsStr = ""
+		for value in movingSpeeds:
+			movingSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+
+		heartRates = self.mgr.db.get_metadata(HEART_RATE_KEY, deviceId, activityId)
+		heartRatesStr = ""
+		for value in heartRates:
+			heartRatesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+
+		cadences = self.mgr.db.get_metadata(CADENCE_KEY, deviceId, activityId)
+		cadencesStr = ""
+		for value in cadences:
+			cadencesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+
+		powers = self.mgr.db.get_metadata(POWER_KEY, deviceId, activityId)
+		powersStr = ""
+		for value in powers:
+			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId))
+		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), moving_speeds=movingSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	def render_page_for_multiple_device_ids(self, deviceIds, userId):
 		if deviceIds is None:

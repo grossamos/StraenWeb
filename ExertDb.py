@@ -330,13 +330,8 @@ class Database(object):
 			return None
 
 		try:
-			sql = "select value from metadata where key = " + self.quote_identifier(key) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
-			rows = self.execute(sql)
-			values = []
-			if rows != None:
-				for row in rows:
-					values.append(row[0])
-			return values
+			sql = "select time,value from metadata where key = " + self.quote_identifier(key) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			return self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
