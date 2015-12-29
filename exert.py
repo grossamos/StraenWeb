@@ -39,7 +39,7 @@ CADENCE_KEY = "Cadence"
 AVG_SPEED_KEY = "Avg. Speed"
 MOVING_SPEED_KEY = "Moving Speed"
 HEART_RATE_KEY = "Avg. Heart Rate"
-POWER_KEY = "Avg. Power"
+POWER_KEY = "Power"
 
 def signal_handler(signal, frame):
 	global g_app
