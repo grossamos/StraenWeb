@@ -251,8 +251,8 @@ ${route}
 			.text(title);
 	}
 
-	var movingSpeeds = [
-${moving_speeds}
+	var speeds = [
+${current_speeds}
 	];
 	var heartRates = [
 ${heart_rates}
@@ -261,8 +261,8 @@ ${heart_rates}
 ${powers}
 	];
 
-	if (movingSpeeds.length > 0)
-		$(function() { drawChart(movingSpeeds, "Speed", "DodgerBlue") });
+	if (speeds.length > 0)
+		$(function() { drawChart(speeds, "Speed", "DodgerBlue") });
 	if (heartRates.length > 0)
 		$(function() { drawChart(heartRates, "BPM", "FireBrick") });
 	if (powers.length > 0)

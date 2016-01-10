@@ -36,9 +36,10 @@ NAME_KEY = "Name"
 TIME_KEY = "Time"
 DISTANCE_KEY = "Distance"
 CADENCE_KEY = "Cadence"
+CURRENT_SPEED_KEY = "Current Speed"
 AVG_SPEED_KEY = "Avg. Speed"
 MOVING_SPEED_KEY = "Moving Speed"
-HEART_RATE_KEY = "Avg. Heart Rate"
+HEART_RATE_KEY = "Heart Rate"
 POWER_KEY = "Power"
 
 def signal_handler(signal, frame):
@@ -336,10 +337,10 @@ class ExertWeb(object):
 			centerLat = locations[0].latitude
 			centerLon = locations[0].longitude
 
-		movingSpeeds = self.mgr.db.get_metadata(MOVING_SPEED_KEY, deviceId, activityId)
-		movingSpeedsStr = ""
-		for value in movingSpeeds:
-			movingSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+		currentSpeeds = self.mgr.db.get_metadata(CURRENT_SPEED_KEY, deviceId, activityId)
+		currentSpeedsStr = ""
+		for value in currentSpeeds:
+			currentSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
 		heartRates = self.mgr.db.get_metadata(HEART_RATE_KEY, deviceId, activityId)
 		heartRatesStr = ""
@@ -357,7 +358,7 @@ class ExertWeb(object):
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), moving_speeds=movingSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
+		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	def render_page_for_multiple_device_ids(self, deviceIds, userId):
 		if deviceIds is None:
