@@ -57,6 +57,16 @@
 	var lastLat = ${centerLat}
 	var lastLon = ${centerLon}
 
+	function escapeRegExp(str)
+	{
+		return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+	}
+
+	function replaceAll(str, find, replace)
+	{
+		return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+	}
+
 	function newCoord(x, y)
 	{
 		return new google.maps.LatLng(x, y);
@@ -87,6 +97,8 @@ ${route}
 		});
 
 		routePath.setMap(map);
+
+		$.ajax({ type: 'POST', url: "${root_url}/updatemetadata/${deviceStr}", success: updateMetadata, dataType: "application/json" });
 	}
 
 	google.maps.event.addDomListener(window, 'load', initialize);
@@ -100,11 +112,7 @@ ${route}
 		if (routePath == null)
 			return;
 
-		var temp = JSON.parse(response);
-		if (temp == null)
-			return;
-
-		var objList = JSON.parse(temp);
+		var objList = JSON.parse(response);
 		if (objList == null)
 			return;
 		if (objList.length == 0)
@@ -129,11 +137,9 @@ ${route}
 		if (response.length < 3)
 			return;
 
-		var temp = JSON.parse(response);
-		if (temp == null)
-			return;
-
-		var objList = JSON.parse(temp);
+		response2 = response.substring(1, response.length - 1);
+		response3 = replaceAll(response2, "\\\"", "\"");
+		var objList = JSON.parse(response3);
 		if (objList == null)
 			return;
 
@@ -142,9 +148,10 @@ ${route}
 			'</div>' +
 			'<h2 id="firstHeading" class="firstHeading">Last Known Position</h2>' +
 			'<div id="bodyContent">' +
-			'<p>'
+			'<p>';
 		for (var i = 0; i < objList.length; ++i)
 		{
+			console.log(objList[i]);
 			if (objList[i].name != "Name")
 			{
 				contentString += objList[i].name;
@@ -157,6 +164,7 @@ ${route}
 			'</p>' +
 			'</div>' +
 			'</div>';
+		console.log(contentString);
 			
 		if (infoWindow)
 		{
@@ -166,14 +174,14 @@ ${route}
 		if (marker)
 		{
 			marker.setMap(null);
-			mark = null;
+			marker = null;
 		}
 
 		infoWindow = new google.maps.InfoWindow
 		({
 			content: contentString
 		});
-
+		
 		marker = new google.maps.Marker
 		({
 			position: new google.maps.LatLng(lastLat, lastLon),
@@ -183,10 +191,10 @@ ${route}
 
 		google.maps.event.addListener(marker, 'click', function()
 		{
-			infoWindow.open(map,marker);
+			infoWindow.open(map, marker);
 		});
 
-		infoWindow.open(map,marker);
+		infoWindow.open(map, marker);
 	};
 
 	var checkForUpdates = function()
@@ -194,8 +202,6 @@ ${route}
 		$.ajax({ type: 'POST', url: "${root_url}/updatetrack/${deviceStr}/${routeLen}", success: appendToTrack, dataType: "application/json" });
 		$.ajax({ type: 'POST', url: "${root_url}/updatemetadata/${deviceStr}", success: updateMetadata, dataType: "application/json" });
 	};
-
-	$.ajax({ type: 'POST', url: "${root_url}/updatemetadata/${deviceStr}", success: updateMetadata, dataType: "application/json" });
 
 	//setInterval(checkForUpdates, 15000);
 </script>
