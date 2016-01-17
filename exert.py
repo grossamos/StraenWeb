@@ -405,46 +405,12 @@ class ExertWeb(object):
 	@cherrypy.expose
 	def user(self, email=None, *args, **kw):
 		try:
-			deviceId, deviceStr = self.mgr.db.get_device_from_username(email)
+			deviceId, deviceStr = self.mgr.db.get_device_id_from_username(email)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
+				return myTemplate.render(root_url=g_rootUrl, error="No devices are associated with this user.")
 			else:
 				return self.render_page_for_device_id(deviceId)
-		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
-	
-	@cherrypy.expose
-	@require()
-	def show_followed_by(self, email=None, *args, **kw):
-		try:
-			list = ""
-
-			followers = self.mgr.list_users_followed_by(email)
-			for follower in followers:
-				list += follower + "\n"
-			
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Error rendering the list of users who are following you.")
-		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
-
-	@cherrypy.expose
-	@require()
-	def show_following(self, email=None, *args, **kw):
-		try:
-			followers = self.mgr.list_users_following(email)
-			for follower in followers:
-				list += follower + "\n"
-
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Error rendering the list of followed users.")
 		except:
 			cherrypy.response.status = 500
 			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
@@ -488,7 +454,7 @@ class ExertWeb(object):
 			if userLoggedIn:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.show_following(email)
+				return self.user(email)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				errorMsg = "Unable to authenticate the user."
@@ -509,7 +475,7 @@ class ExertWeb(object):
 			if userCreated:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.show_following(email)
+				return self.user(email)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				errorMsg = "Unable to create the user."

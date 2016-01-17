@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import sys
+import traceback
 
 class Location(object):
 	def __init__(self):
@@ -204,9 +205,7 @@ class Database(object):
 		try:
 			sql = "select id from device where device = " + self.quote_identifier(deviceStr)
 			rows = self.execute(sql)
-			if rows is None:
-				return None
-			if len(rows) == 0:
+			if rows is None or len(rows) == 0:
 				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0)"
 				rows = self.execute(sql)
 				sql = "select id from device where device = " + self.quote_identifier(deviceStr)
@@ -228,13 +227,12 @@ class Database(object):
 		try:
 			sql = "select device.id, device.device from device inner join user on device.userId=user.id and user.username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
-			if len(rows) == 0:
-				return None
-			return rows[0][0],rows[0][1]
+			if rows != None and len(rows) > 0:
+				return rows[0][0],rows[0][1]
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return None
+		return None, None
 
 	def update_device(self, deviceId, userId):
 		if deviceId is None:
