@@ -448,8 +448,10 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def login_submit(self, email, password, *args, **kw):
+	def submit_login(self, *args, **kw):
 		try:
+			email = cherrypy.request.params.get("email")
+			password = cherrypy.request.params.get("password")
 			userLoggedIn, infoStr = self.mgr.authenticate_user(email, password)
 			if userLoggedIn:
 				cherrypy.session.regenerate()
@@ -469,7 +471,7 @@ class ExertWeb(object):
 		return ""
 
 	@cherrypy.expose
-	def create_login_submit(self, email, realname, password1, password2, *args, **kw):
+	def submit_new_login(self, email, realname, password1, password2, *args, **kw):
 		try:
 			userCreated, infoStr = self.mgr.create_user(email, realname, password1, password2, "")
 			if userCreated:
