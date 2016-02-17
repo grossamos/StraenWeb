@@ -30,7 +30,7 @@ class Database(object):
 				cur.execute(sql)
 				return cur.fetchall()
 		except:
-			self.log_error("Database error:\n\tfile = " + dbFile + "\n\tsql = " + sql)
+			self.log_error("Database error:\n\tfile = " + dbFile + "\n\tsql = " + self.quote_identifier(sql))
 		finally:
 			if con:
 				con.close()
