@@ -329,6 +329,8 @@ class ExertWeb(object):
 		route = ""
 		centerLat = 0
 		centerLon = 0
+		lastLat = 0
+		lastLon = 0
 
 		for location in locations:
 			route += "\t\t\t\tnewCoord(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
@@ -336,6 +338,8 @@ class ExertWeb(object):
 		if len(locations) > 0:
 			centerLat = locations[0].latitude
 			centerLon = locations[0].longitude
+			lastLat = locations[len(locations) - 1].latitude
+			lastLon = locations[len(locations) - 1].longitude
 
 		currentSpeeds = self.mgr.db.get_metadata(CURRENT_SPEED_KEY, deviceId, activityId)
 		currentSpeedsStr = ""
@@ -358,7 +362,7 @@ class ExertWeb(object):
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
+		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	def render_page_for_multiple_device_ids(self, deviceIds, userId):
 		if deviceIds is None:
@@ -368,6 +372,8 @@ class ExertWeb(object):
 		routeCoordinates = ""
 		centerLat = 0
 		centerLon = 0
+		lastLat = 0
+		lastLon = 0
 		deviceIndex = 0
 
 		for deviceId in deviceIds:
@@ -383,9 +389,11 @@ class ExertWeb(object):
 			if len(locations) > 0:
 				centerLat = locations[0].latitude
 				centerLon = locations[0].longitude
+				lastLat = locations[len(locations) - 1].latitude
+				lastLon = locations[len(locations) - 1].longitude
 		
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, centerLat=centerLat, centerLon=centerLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
+		return myTemplate.render(root_url=g_rootUrl, centerLat=centerLat, centerLon=centerLon, lastLat=lastLat, lastLon=lastLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
 
 	@cherrypy.expose
 	def device(self, deviceStr=None, *args, **kw):
