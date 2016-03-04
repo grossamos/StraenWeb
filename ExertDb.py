@@ -9,6 +9,13 @@ class Location(object):
 		self.longitude = 0.0
 		super(Location, self).__init__()
 
+class Device(object):
+	def __init__(self):
+		self.id = 0
+		self.name = ""
+		self.description = ""
+		super(Device, self).__init__()
+
 class Database(object):
 	dbFile = ""
 
@@ -178,6 +185,25 @@ class Database(object):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return 0
+	
+	def get_realname_from_username(self, username):
+		if username is None:
+			self.log_error("Unexpected empty object")
+			return ""
+		if len(username) == 0:
+			self.log_error("username too short")
+			return ""
+
+		try:
+			sql = "select realname from user where username = " + self.quote_identifier(username)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+			return ""
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return ""
 
 	def insert_device(self, deviceId, userId):
 		if deviceStr is None:
@@ -216,7 +242,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def get_device_id_from_username(self, username):
+	def get_device_ids_from_username(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -224,15 +250,21 @@ class Database(object):
 			self.log_error("username too short")
 			return None
 
+		devices = []
+
 		try:
 			sql = "select device.id, device.device from device inner join user on device.userId=user.id and user.username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
-			if rows != None and len(rows) > 0:
-				return rows[0][0],rows[0][1]
+			if rows != None:
+				for row in rows:
+					device = Location()
+					device.id = rows[0][0]
+					device.name = rows[0][1]
+					devices.append(location)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return None, None
+		return devices
 
 	def update_device(self, deviceId, userId):
 		if deviceId is None:

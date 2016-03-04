@@ -1,20 +1,40 @@
 html {
 	font-size: 10pt;
 }
+header {
+	background-color:black;
+	color:white;
+	text-align:center;
+	padding:5px;	 
+}
+nav {
+	line-height:30px;
+	background-color:#eeeeee;
+	height:300px;
+	width:200px;
+	float:left;
+	padding:5px;	      
+}
+section {
+	width:350px;
+	float:left;
+	padding:10px;	 	 
+}
+footer {
+	background-color:black;
+	color:white;
+	clear:both;
+	text-align:center;
+	padding:5px;	 	 
+}
 label {
 	display: block;
 	color: #999;
 }
-
-a:link {color: #000000}
-a:visited {color: #006600}
-a:hover {color: #FFCC00}
-a:active {color: #FF00CC}
-
-p {	color: black;
+p {
+	color: black;
 	font-family: "Times New Roman";
 }
-
 h1 {
 	font-family: arial,helvetica;
 	font-size: 36pt;
@@ -28,6 +48,11 @@ h2, h3, h4, h5, h6 {
 	text-align:center;
 }
 
+a:link { color: #000000 }
+a:visited { color: #006600 }
+a:hover { color: #FFCC00 }
+a:active { color: #FF00CC }
+
 .cf:before,
 .cf:after {
 	content: ""; 
@@ -35,10 +60,10 @@ h2, h3, h4, h5, h6 {
 }
 
 .cf:after {
-    clear: both;
+	clear: both;
 }
 .cf {
-    *zoom: 1;
+	*zoom: 1;
 }
 
 :focus {
@@ -51,8 +76,7 @@ h2, h3, h4, h5, h6 {
 	padding: 25px;
 	background-color: rgba(250,250,250,0.5);
 	border-radius: 5px;
-	box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2), 
-		inset 0px 1px 0px 0px rgba(250, 250, 250, 0.5);
+	box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2), inset 0px 1px 0px 0px rgba(250, 250, 250, 0.5);
 	border: 1px solid rgba(0, 0, 0, 0.3);
 }
 .loginform ul {
@@ -68,8 +92,7 @@ h2, h3, h4, h5, h6 {
 	margin-right: 10px;
 	border: 1px solid rgba(0, 0, 0, 0.3);
 	border-radius: 3px;
-	box-shadow: inset 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 
-				0px 1px 0px 0px rgba(250, 250, 250, 0.5) ;
+	box-shadow: inset 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 0px 0px rgba(250, 250, 250, 0.5) ;
 }
 .loginform input[type=submit] {
 	border: 1px solid rgba(0, 0, 0, 0.3);

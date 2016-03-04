@@ -26,21 +26,22 @@ g_createLoginHtmlFile   = os.path.join(g_rootDir, 'create_login.html')
 g_mapSingleHtmlFile     = os.path.join(g_rootDir, 'map_single.html')
 g_errorHtmlFile         = os.path.join(g_rootDir, 'error.html')
 g_errorLoggedInHtmlFile = os.path.join(g_rootDir, 'error_logged_in.html')
+g_userHtmlFile          = os.path.join(g_rootDir, 'user.html')
 g_aboutHtmlFile         = os.path.join(g_rootDir, 'about.html')
 g_app                   = None
 
-SESSION_KEY = '_cp_username'
-MIN_PASSWORD_LEN = 8
+SESSION_KEY       = '_cp_username'
+MIN_PASSWORD_LEN  = 8
 
-NAME_KEY = "Name"
-TIME_KEY = "Time"
-DISTANCE_KEY = "Distance"
-CADENCE_KEY = "Cadence"
+NAME_KEY          = "Name"
+TIME_KEY          = "Time"
+DISTANCE_KEY      = "Distance"
+CADENCE_KEY       = "Cadence"
 CURRENT_SPEED_KEY = "Current Speed"
-AVG_SPEED_KEY = "Avg. Speed"
-MOVING_SPEED_KEY = "Moving Speed"
-HEART_RATE_KEY = "Heart Rate"
-POWER_KEY = "Power"
+AVG_SPEED_KEY     = "Avg. Speed"
+MOVING_SPEED_KEY  = "Moving Speed"
+HEART_RATE_KEY    = "Heart Rate"
+POWER_KEY         = "Power"
 
 def signal_handler(signal, frame):
 	global g_app
@@ -92,8 +93,13 @@ class DataMgr(object):
 		dbHash = self.db.get_user_hash(email)
 		if dbHash == 0:
 			return False, "The user could not be found."
-		loggedIn = (dbHash == bcrypt.hashpw(password, dbHash))
-		return loggedIn, "The user has been logged in."
+		if dbHash == bcrypt.hashpw(password, dbHash):
+			loggedIn = True
+			authStr = "The user has been logged in."
+		else:
+			loggedIn = False
+			authStr = "The password is invalid."
+		return loggedIn, authStr
 
 	def create_user(self, email, realname, password1, password2, deviceStr):
 		if len(email) == 0:
@@ -159,7 +165,7 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def updatetrack(self, deviceStr=None, num=None, *args, **kw):
+	def update_track(self, deviceStr=None, num=None, *args, **kw):
 		if deviceStr is None:
 			return ""
 		if num is None:
@@ -185,14 +191,13 @@ class ExertWeb(object):
 
 			return response
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+			pass
+
 		return ""
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def updatemetadata(self, deviceStr=None, *args, **kw):
+	def update_metadata(self, deviceStr=None, *args, **kw):
 		if deviceStr is None:
 			return ""
 
@@ -257,14 +262,13 @@ class ExertWeb(object):
 
 			return response
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+			pass
+
 		return ""
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_following(self, email=None, num=None, *args, **kw):
+	def liser_users_following(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 		
@@ -283,14 +287,13 @@ class ExertWeb(object):
 			
 			return response
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+			pass
+
 		return ""
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_followed_by(self, email=None, num=None, *args, **kw):
+	def liser_users_followed_by(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 
@@ -309,11 +312,11 @@ class ExertWeb(object):
 			
 			return response
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+			pass
+
 		return ""
 
+	# Helper function for rendering the map corresonding to a specific device.
 	def render_page_for_device_id(self, deviceStr, deviceId):
 		if deviceStr is None or deviceId is None:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
@@ -364,6 +367,7 @@ class ExertWeb(object):
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
+	# Helper function for rendering the map corresonding to a multiple devices.
 	def render_page_for_multiple_device_ids(self, deviceIds, userId):
 		if deviceIds is None:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
@@ -395,6 +399,7 @@ class ExertWeb(object):
 		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl, centerLat=centerLat, centerLon=centerLon, lastLat=lastLat, lastLon=lastLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
 
+	# Renders the map page for a single device.
 	@cherrypy.expose
 	def device(self, deviceStr=None, *args, **kw):
 		try:
@@ -405,25 +410,85 @@ class ExertWeb(object):
 			else:
 				return self.render_page_for_device_id(deviceStr, deviceId)
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
 
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the list of the specified user's activities.
+	@cherrypy.expose
+	def my_activities(self, email=None, *args, **kw):
+		try:
+			userId = self.mgr.db.get_user_id_from_username(email)
+		except:
+			pass
+		
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the list of all activities the specified user is allowed to view.
+	@cherrypy.expose
+	def all_activities(self, email=None, *args, **kw):
+		try:
+			userId = self.mgr.db.get_user_id_from_username(email)
+		except:
+			pass
+		
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the list of users the specified user is following.
+	@cherrypy.expose
+	def following(self, email=None, *args, **kw):
+		try:
+			userId = self.mgr.db.get_user_id_from_username(email)
+		except:
+			pass
+		
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the list of users that are following the specified user.
+	@cherrypy.expose
+	def followed_by(self, email=None, *args, **kw):
+		try:
+			userId = self.mgr.db.get_user_id_from_username(email)
+		except:
+			pass
+		
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the list of a user's devices.
+	@cherrypy.expose
+	def device_list(self, email=None, *args, **kw):
+		try:
+			userId = self.mgr.db.get_user_id_from_username(email)
+		except:
+			pass
+		
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the dashboard page for an individual user.
 	@cherrypy.expose
 	def user(self, email=None, *args, **kw):
 		try:
-			deviceId, deviceStr = self.mgr.db.get_device_id_from_username(email)
-			if deviceId is None:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="No devices are associated with this user.")
-			else:
-				return self.render_page_for_device_id(deviceId)
+			realname = self.mgr.db.get_realname_from_username(email)
+			myTemplate = Template(filename=g_userHtmlFile, module_directory=g_tempmodDir)
+			return myTemplate.render(root_url=g_rootUrl, email=email, name=realname, error="Internal Error.")
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
+
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 
 	@cherrypy.expose
 	@require()
@@ -435,10 +500,11 @@ class ExertWeb(object):
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
+
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 
 	@cherrypy.expose
 	@require()
@@ -450,10 +516,11 @@ class ExertWeb(object):
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
+
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 
 	@cherrypy.expose
 	def submit_login(self, *args, **kw):
@@ -464,7 +531,7 @@ class ExertWeb(object):
 			if userLoggedIn:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.user(email)
+				return self.user(email, *args, **kw)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				errorMsg = "Unable to authenticate the user."
@@ -473,10 +540,11 @@ class ExertWeb(object):
 					errorMsg += infoStr
 				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
 		except:
-			cherrypy.response.status = 500
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
+
+		cherrypy.response.status = 500
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
 
 	@cherrypy.expose
 	def submit_new_login(self, email, realname, password1, password2, *args, **kw):
@@ -485,7 +553,7 @@ class ExertWeb(object):
 			if userCreated:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.user(email)
+				return self.user(email, *args, **kw)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				errorMsg = "Unable to create the user."
@@ -494,25 +562,30 @@ class ExertWeb(object):
 					errorMsg += infoStr
 				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
 		except:
-			myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
-		return ""
+			pass
 
+		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		return myTemplate.render(root_url=g_rootUrl, error="Internal Error.")
+
+	# Renders the login page.
 	@cherrypy.expose
 	def login(self):
 		myTemplate = Template(filename=g_loginHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl)
 
+	# Renders the create login page.
 	@cherrypy.expose
 	def create_login(self):
 		myTemplate = Template(filename=g_createLoginHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl)
 
+	# Renders the about page.
 	@cherrypy.expose
 	def about(self):
 		myTemplate = Template(filename=g_aboutHtmlFile, module_directory=g_tempmodDir)
 		return myTemplate.render(root_url=g_rootUrl)
 
+	# Renders the index page.
 	@cherrypy.expose
 	def index(self):
 		return self.login()
