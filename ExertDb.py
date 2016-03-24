@@ -52,6 +52,11 @@ class Database(object):
 
 	def create(self):
 		try:
+			self.execute("create table activity (id integer primary key, name text, activityType integer)")
+		except:
+			pass
+
+		try:
 			self.execute("create table location (id integer primary key, deviceId integer, activityId integer, latitude double, longitude double, altitude double)")
 		except:
 			pass
@@ -77,11 +82,11 @@ class Database(object):
 			pass
 
 		try:
-			self.execute("create table device (id integer primary key, device text, userId integer)")
+			self.execute("create table device (id integer primary key, device text, userId integer, public integer)")
 		except:
 			pass
 	
-	def insert_user(self, username, realname, hash):
+	def create_user(self, username, realname, hash):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return False
@@ -110,7 +115,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def get_user_hash(self, username):
+	def retrieve_user_hash(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return 0
@@ -129,52 +134,14 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return 0
 
-	def insert_to_followed_by_list(self, username, followedByName):
-		if username is None:
-			self.log_error("Unexpected empty object")
-			return False
-		if followedByName is None:
-			self.log_error("Unexpected empty object")
-			return False
-
-		try:
-			userId = self.get_user_id_from_username(username)
-			followerId = self.get_user_id_from_username(followedByName)
-			sql = "insert into followedBy values(NULL, " + userId + ", " + followerId + ", 0)"
-			rows = self.execute(sql)
-			return rows != None
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return False
-
-	def insert_to_following_list(self, username, followingName):
-		if username is None:
-			self.log_error("Unexpected empty object")
-			return False
-		if followingName is None:
-			self.log_error("Unexpected empty object")
-			return False
-
-		try:
-			userId = self.get_user_id_from_username(username)
-			followerId = self.get_user_id_from_username(followingName)
-			sql = "insert into following values(NULL, " + userId + ", " + followerId + ", 0)"
-			rows = self.execute(sql)
-			return rows != None
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return False
-
-	def get_user_id_from_username(self, username):
+	def retrieve_user_id_from_username(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return 0
 		if len(username) == 0:
 			self.log_error("username too short")
 			return 0
-		
+
 		try:
 			sql = "select id from user where username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
@@ -185,15 +152,15 @@ class Database(object):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return 0
-	
-	def get_realname_from_username(self, username):
+
+	def retrieve_realname_from_username(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return ""
 		if len(username) == 0:
 			self.log_error("username too short")
 			return ""
-
+		
 		try:
 			sql = "select realname from user where username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
@@ -205,7 +172,45 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return ""
 
-	def insert_device(self, deviceId, userId):
+	def create_followed_by_entry(self, username, followedByName):
+		if username is None:
+			self.log_error("Unexpected empty object")
+			return False
+		if followedByName is None:
+			self.log_error("Unexpected empty object")
+			return False
+
+		try:
+			userId = self.retrieve_user_id_from_username(username)
+			followerId = self.retrieve_user_id_from_username(followedByName)
+			sql = "insert into followedBy values(NULL, " + userId + ", " + followerId + ", 0)"
+			rows = self.execute(sql)
+			return rows != None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
+
+	def create_following_entry(self, username, followingName):
+		if username is None:
+			self.log_error("Unexpected empty object")
+			return False
+		if followingName is None:
+			self.log_error("Unexpected empty object")
+			return False
+
+		try:
+			userId = self.retrieve_user_id_from_username(username)
+			followerId = self.retrieve_user_id_from_username(followingName)
+			sql = "insert into following values(NULL, " + userId + ", " + followerId + ", 0)"
+			rows = self.execute(sql)
+			return rows != None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
+
+	def create_device(self, deviceId, userId):
 		if deviceStr is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -220,7 +225,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return None
 	
-	def get_device_id_from_device_str(self, deviceStr):
+	def retrieve_device_id_from_device_str(self, deviceStr):
 		if deviceStr is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -232,7 +237,7 @@ class Database(object):
 			sql = "select id from device where device = " + self.quote_identifier(deviceStr)
 			rows = self.execute(sql)
 			if rows is None or len(rows) == 0:
-				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0)"
+				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0, 0)"
 				rows = self.execute(sql)
 				sql = "select id from device where device = " + self.quote_identifier(deviceStr)
 				rows = self.execute(sql)
@@ -242,7 +247,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def get_device_ids_from_username(self, username):
+	def retrieve_device_ids_for_username(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -266,6 +271,21 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return devices
 
+	def retrieve_most_recent_activity_id_for_device(self, deviceId):
+		if deviceId is None:
+			self.log_error("Unexpected empty object")
+			return None
+		
+		try:
+			sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+			rows = self.execute(sql)
+			if rows != None and len(rows) > 0:
+				return rows[0][0]
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return 0
+
 	def update_device(self, deviceId, userId):
 		if deviceId is None:
 			self.log_error("Unexpected empty object")
@@ -281,21 +301,6 @@ class Database(object):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return None
-
-	def get_latest_activity_id_for_device(self, deviceId):
-		if deviceId is None:
-			self.log_error("Unexpected empty object")
-			return None
-
-		try:
-			sql = "select max(activityId) from location where deviceId = " + str(deviceId)
-			rows = self.execute(sql)
-			if rows != None and len(rows) > 0:
-				return rows[0][0]
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return 0
 
 	def clear_metadata(self, deviceStr):
 		if deviceStr is None:
@@ -315,7 +320,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def insert_metadata(self, deviceStr, activityId, dateTime, key, value):
+	def create_metadata(self, deviceStr, activityId, dateTime, key, value):
 		if deviceStr is None:
 			self.log_error("Unexpected empty object")
 			return
@@ -348,7 +353,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def get_metadata(self, key, deviceId, activityId):
+	def retrieve_metadata(self, key, deviceId, activityId):
 		if key is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -367,7 +372,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return []
 
-	def insert_location(self, deviceStr, activityId, latitude, longitude, altitude):
+	def create_location(self, deviceStr, activityId, latitude, longitude, altitude):
 		if deviceStr is None:
 			self.log_error("Unexpected empty object")
 			return
@@ -392,7 +397,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def list_locations(self, deviceId, activityId):
+	def retrieve_locations(self, deviceId, activityId):
 		if deviceId is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -416,7 +421,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return locations
 
-	def list_last_locations(self, deviceId, activityId, num):
+	def retrieve_most_recent_locations(self, deviceId, activityId, num):
 		if deviceId is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -449,7 +454,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return locations
 
-	def list_users_following(self, username):
+	def retrieve_users_following(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -460,7 +465,7 @@ class Database(object):
 		following = []
 		
 		try:
-			userId = self.get_user_id_from_username(username)
+			userId = self.retrieve_user_id_from_username(username)
 			if userId != None:
 				sql = "select * from following where userId = " + str(userId)
 				rows = self.execute(sql)
@@ -472,7 +477,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return following
 
-	def list_users_followed_by(self, username):
+	def retrieve_users_followed_by(self, username):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return None
@@ -483,7 +488,7 @@ class Database(object):
 		followedBy = []
 
 		try:
-			userId = self.get_user_id_from_username(username)
+			userId = self.retrieve_user_id_from_username(username)
 			if userId != None:
 				sql = "select * from followedBy where userId = " + str(userId)
 				rows = self.execute(sql)

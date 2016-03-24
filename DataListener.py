@@ -54,7 +54,7 @@ class DataListener(object):
 			lat = decodedObj["Latitude"]
 			lon = decodedObj["Longitude"]
 			alt = decodedObj["Altitude"]
-			self.db.insert_location(deviceId, activityId, lat, lon, alt)
+			self.db.create_location(deviceId, activityId, lat, lon, alt)
 
 			# Parse the metadata looking for the timestamp
 			dataTime = time.time()
@@ -69,7 +69,7 @@ class DataListener(object):
 				key = item[0]
 				value = item[1]
 				if not key in self.notMetaData:
-					self.db.insert_metadata(deviceId, activityId, dateTime, key, value)
+					self.db.create_metadata(deviceId, activityId, dateTime, key, value)
 
 			# Update the user device association
 			if len(userName):

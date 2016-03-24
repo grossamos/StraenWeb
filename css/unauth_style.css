@@ -63,6 +63,7 @@ h2, h3, h4, h5, h6 {
 .loginform li {
 	display: inline;
 	float: left;
+	padding-bottom: .25cm;
 }
 .loginform input:not([type=submit]) {
 	padding: 5px;
