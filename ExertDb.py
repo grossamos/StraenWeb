@@ -302,7 +302,7 @@ class Database(object):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def clear_metadata(self, deviceStr):
+	def clear_metadata_for_device(self, deviceStr):
 		if deviceStr is None:
 			self.log_error("Unexpected empty object")
 			return
@@ -314,6 +314,24 @@ class Database(object):
 			deviceId = self.get_device_id_from_device_str(deviceStr)
 			if deviceId is not None:
 				sql = "delete from metadata where deviceId = " + str(deviceId)
+				self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return
+
+	def clear_metadata_for_activity(self, deviceStr, activityId):
+		if deviceStr is None:
+			self.log_error("Unexpected empty object")
+			return
+		if len(deviceStr) == 0:
+			self.log_error("Device ID too short")
+			return
+		
+		try:
+			deviceId = self.get_device_id_from_device_str(deviceStr)
+			if deviceId is not None:
+				sql = "delete from metadata where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 				self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
