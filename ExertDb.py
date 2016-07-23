@@ -311,7 +311,7 @@ class Database(object):
 			return
 
 		try:
-			deviceId = self.get_device_id_from_device_str(deviceStr)
+			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
 			if deviceId is not None:
 				sql = "delete from metadata where deviceId = " + str(deviceId)
 				self.execute(sql)
@@ -329,7 +329,7 @@ class Database(object):
 			return
 		
 		try:
-			deviceId = self.get_device_id_from_device_str(deviceStr)
+			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
 			if deviceId is not None:
 				sql = "delete from metadata where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 				self.execute(sql)
@@ -363,7 +363,7 @@ class Database(object):
 				valueStr = "'" + value + "'"
 			else:
 				valueStr = str(value)
-			deviceId = self.get_device_id_from_device_str(deviceStr)
+			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
 			sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(dateTime) + ", '" + key + "', " + valueStr + ")"
 			self.execute(sql)
 		except:
@@ -407,7 +407,7 @@ class Database(object):
 			self.log_error("Unexpected empty object")
 			return
 		try:
-			deviceId = self.get_device_id_from_device_str(deviceStr)
+			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
 			sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
 			self.execute(sql)
 		except:

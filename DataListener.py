@@ -4,6 +4,7 @@ import os
 import signal
 import socket
 import sys
+import traceback
 import time
 import ExertDb
 
@@ -60,7 +61,7 @@ class DataListener(object):
 			self.db.create_location(device_id, activity_id, lat, lon, alt)
 			
 			# Clear the old metadata
-			self.db.clear_metadata_for_activity(activity_id)
+			self.db.clear_metadata_for_activity(device_id, activity_id)
 
 			# Parse the metadata looking for the timestamp
 			date_time = time.time()
@@ -88,6 +89,9 @@ class DataListener(object):
 			Log("KeyError - reason " + str(e) + ".")
 		except:
 			Log("Error parsing JSON data.")
+			#exc_type, exc_value, exc_traceback = sys.exc_info()
+			#traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
+			#traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
 
 	def read_line(self, sock):
 		while self.running:
