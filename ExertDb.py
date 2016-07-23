@@ -37,7 +37,7 @@ class Database(object):
 				cur.execute(sql)
 				return cur.fetchall()
 		except:
-			self.log_error("Database error:\n\tfile = " + dbFile + "\n\tsql = " + self.quote_identifier(sql))
+			self.log_error("Database error:\n\tfile = " + self.dbFile + "\n\tsql = " + self.quote_identifier(sql))
 		finally:
 			if con:
 				con.close()
@@ -237,7 +237,7 @@ class Database(object):
 			sql = "select id from device where device = " + self.quote_identifier(deviceStr)
 			rows = self.execute(sql)
 			if rows is None or len(rows) == 0:
-				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0, 0)"
+				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0)"
 				rows = self.execute(sql)
 				sql = "select id from device where device = " + self.quote_identifier(deviceStr)
 				rows = self.execute(sql)
