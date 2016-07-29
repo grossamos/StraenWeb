@@ -166,15 +166,17 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def update_track(self, deviceStr=None, num=None, *args, **kw):
+	def update_track(self, deviceStr=None, activityIdStr=None, num=None, *args, **kw):
 		if deviceStr is None:
+			return ""
+		if activityIdStr is None:
 			return ""
 		if num is None:
 			return ""
 		
 		try:
 			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
-			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
+			activityId = int(activityIdStr)
 			if activityId == 0:
 				return ""
 
@@ -198,13 +200,15 @@ class ExertWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def update_metadata(self, deviceStr=None, *args, **kw):
+	def update_metadata(self, deviceStr=None, activityIdStr=None, *args, **kw):
 		if deviceStr is None:
+			return ""
+		if activityIdStr is None:
 			return ""
 
 		try:
 			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
-			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
+			activityId = int(activityIdStr)
 			if activityId == 0:
 				return ""
 
@@ -317,15 +321,13 @@ class ExertWeb(object):
 
 		return ""
 
-	# Helper function for rendering the map corresonding to a specific device.
-	def render_page_for_device_id(self, deviceStr, deviceId):
+	# Helper function for rendering the map corresonding to a specific device and activity.
+	def render_page_for_activity(self, deviceStr, deviceId, activityId):
 		if deviceStr is None or deviceId is None:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
 			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
 
-		activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
 		locations = self.mgr.db.retrieve_locations(deviceId, activityId)
-
 		if locations is None or len(locations) == 0:
 			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
 			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
@@ -416,9 +418,15 @@ class ExertWeb(object):
 			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
 			if deviceId is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
+				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
 			else:
-				return self.render_page_for_device_id(deviceStr, deviceId)
+				activityIdStr = cherrypy.request.params.get("activityId")
+				if activityIdStr is None:
+					activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
+				else:
+					activityId = int(activityIdStr)
+				result = self.render_page_for_activity(deviceStr, deviceId, activityId)
+			return result
 		except:
 			pass
 		return self.error()
@@ -473,9 +481,7 @@ class ExertWeb(object):
 	@cherrypy.expose
 	def user(self, email, *args, **kw):
 		try:
-			print "Here1"
 			realname = self.mgr.db.retrieve_realname_from_username(email)
-			print "Here2"
 			myTemplate = Template(filename=g_userHtmlFile, module_directory=g_tempmodDir)
 			return myTemplate.render(root_url=g_rootUrl, email=email, name=realname, error="Internal Error.")
 		except:
@@ -488,10 +494,11 @@ class ExertWeb(object):
 	def invite_to_follow(self, email, target_email, *args, **kw):
 		try:
 			if self.mgr.invite_to_follow(email, target_email):
-				return ""
+				result = ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+			return result
 		except:
 			pass
 		return self.error()
@@ -502,10 +509,11 @@ class ExertWeb(object):
 	def request_to_follow(self, email, target_email, *args, **kw):
 		try:
 			if self.mgr.request_to_follow(email, target_email):
-				return ""
+				result = ""
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				return myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+			return result
 		except:
 			pass
 		return self.error()
@@ -516,18 +524,23 @@ class ExertWeb(object):
 		try:
 			email = cherrypy.request.params.get("email")
 			password = cherrypy.request.params.get("password")
-			userLoggedIn, infoStr = self.mgr.authenticate_user(email, password)
-			if userLoggedIn:
-				cherrypy.session.regenerate()
-				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.user(email, None, None)
-			else:
+			if email is None or password is None:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				errorMsg = "Unable to authenticate the user."
-				if len(infoStr) > 0:
-					errorMsg += " "
-					errorMsg += infoStr
-				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+				result = myTemplate.render(root_url=g_rootUrl, error="An email address and password were not provided")
+			else:
+				userLoggedIn, infoStr = self.mgr.authenticate_user(email, password)
+				if userLoggedIn:
+					cherrypy.session.regenerate()
+					cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
+					result = self.user(email, None, None)
+				else:
+					myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+					errorMsg = "Unable to authenticate the user."
+					if len(infoStr) > 0:
+						errorMsg += " "
+						errorMsg += infoStr
+					result = myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+			return result
 		except:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
 			print repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
@@ -541,14 +554,15 @@ class ExertWeb(object):
 			if userCreated:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				return self.user(email, *args, **kw)
+				result = self.user(email, *args, **kw)
 			else:
 				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
 				errorMsg = "Unable to create the user."
 				if len(infoStr) > 0:
 					errorMsg += " "
 					errorMsg += infoStr
-				return myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+				result = myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+			return result
 		except:
 			pass
 		return self.error()
