@@ -1,6 +1,7 @@
 import cherrypy
 import datetime
 import json
+import logging
 import mako
 import os
 import re
@@ -20,7 +21,7 @@ from mako.template import Template
 g_rootDir               = os.path.dirname(os.path.abspath(__file__))
 g_rootUrl               = 'http://exert-app.com/live'
 g_accessLog             = 'exert_access.log'
-g_exertLog              = 'exert_error.log'
+g_errorLog              = 'exert_error.log'
 g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
 g_loginHtmlFile         = os.path.join(g_rootDir, 'login.html')
 g_createLoginHtmlFile   = os.path.join(g_rootDir, 'create_login.html')
@@ -43,6 +44,10 @@ AVG_SPEED_KEY     = "Avg. Speed"
 MOVING_SPEED_KEY  = "Moving Speed"
 HEART_RATE_KEY    = "Heart Rate"
 POWER_KEY         = "Power"
+
+CADENCE_DB_KEY    = 1
+HEART_RATE_DB_KEY = 2
+POWER_DB_KEY      = 3
 
 def signal_handler(signal, frame):
 	global g_app
@@ -79,7 +84,7 @@ def require(*conditions):
 
 class DataMgr(object):
 	def __init__(self):
-		self.db = ExertDb.Database(g_rootDir)
+		self.db = ExertDb.ExertDb(g_rootDir)
 		super(DataMgr, self).__init__()
 
 	def terminate(self):
@@ -245,19 +250,19 @@ class ExertWeb(object):
 					response += ","
 				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(movingSpeeds[-1][1])})
 
-			heartRates = self.mgr.db.retrieve_metadata(HEART_RATE_KEY, deviceId, activityId)
+			heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceId, activityId)
 			if heartRates != None and len(heartRates) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heartRates[-1][1])})
 
-			cadences = self.mgr.db.retrieve_metadata(CADENCE_KEY, deviceId, activityId)
+			cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceId, activityId)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 			
-			powers = self.mgr.db.retrieve_metadata(POWER_KEY, deviceId, activityId)
+			powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceId, activityId)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
 					response += ","
@@ -267,7 +272,7 @@ class ExertWeb(object):
 
 			return response
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in update_metadata', 'EXEC', logging.WARNING)
 
 		return ""
 
@@ -292,7 +297,7 @@ class ExertWeb(object):
 			
 			return response
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in liser_users_following', 'EXEC', logging.WARNING)
 
 		return ""
 
@@ -317,7 +322,7 @@ class ExertWeb(object):
 			
 			return response
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in liser_users_followed_by', 'EXEC', logging.WARNING)
 
 		return ""
 
@@ -352,17 +357,17 @@ class ExertWeb(object):
 		for value in currentSpeeds:
 			currentSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		heartRates = self.mgr.db.retrieve_metadata(HEART_RATE_KEY, deviceId, activityId)
+		heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceId, activityId)
 		heartRatesStr = ""
 		for value in heartRates:
 			heartRatesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		cadences = self.mgr.db.retrieve_metadata(CADENCE_KEY, deviceId, activityId)
+		cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceId, activityId)
 		cadencesStr = ""
 		for value in cadences:
 			cadencesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		powers = self.mgr.db.retrieve_metadata(POWER_KEY, deviceId, activityId)
+		powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceId, activityId)
 		powersStr = ""
 		for value in powers:
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
@@ -428,7 +433,7 @@ class ExertWeb(object):
 				result = self.render_page_for_activity(deviceStr, deviceId, activityId)
 			return result
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of the specified user's activities.
@@ -437,7 +442,7 @@ class ExertWeb(object):
 		try:
 			userId = self.mgr.db.retrieve_user_id_from_username(email)
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of all activities the specified user is allowed to view.
@@ -446,7 +451,7 @@ class ExertWeb(object):
 		try:
 			userId = self.mgr.db.retrieve_user_id_from_username(email)
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of users the specified user is following.
@@ -455,7 +460,7 @@ class ExertWeb(object):
 		try:
 			userId = self.mgr.db.retrieve_user_id_from_username(email)
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of users that are following the specified user.
@@ -464,7 +469,7 @@ class ExertWeb(object):
 		try:
 			userId = self.mgr.db.retrieve_user_id_from_username(email)
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in followed_by', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of a user's devices.
@@ -474,7 +479,7 @@ class ExertWeb(object):
 			userId = self.mgr.db.retrieve_user_id_from_username(email)
 			realname = self.mgr.db.retrieve_realname_from_username(email)
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the dashboard page for an individual user.
@@ -485,7 +490,7 @@ class ExertWeb(object):
 			myTemplate = Template(filename=g_userHtmlFile, module_directory=g_tempmodDir)
 			return myTemplate.render(root_url=g_rootUrl, email=email, name=realname, error="Internal Error.")
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the page for inviting a follower
@@ -500,7 +505,7 @@ class ExertWeb(object):
 				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 			return result
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in invite_to_follow', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the page for inviting someone to follow
@@ -515,7 +520,7 @@ class ExertWeb(object):
 				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
 			return result
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Processes a login
@@ -564,7 +569,7 @@ class ExertWeb(object):
 				result = myTemplate.render(root_url=g_rootUrl, error=errorMsg)
 			return result
 		except:
-			pass
+			cherrypy.log.error('Unhandled exception in submit_new_login', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the login page.
@@ -635,6 +640,6 @@ cherrypy.config.update( {
 					   'server.socket_host': '127.0.0.1',
 					   'requests.show_tracebacks': False,
 					   'log.access_file': g_accessLog,
-					   'log.error_file': g_exertLog } )
+					   'log.error_file': g_errorLog } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 cherrypy.quickstart(g_app, config=conf)

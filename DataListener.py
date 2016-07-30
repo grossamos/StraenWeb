@@ -11,6 +11,14 @@ import ExertDb
 g_debug = False
 g_root_dir = os.path.dirname(os.path.realpath(__file__))
 
+CADENCE_KEY    = "Cadence"
+HEART_RATE_KEY = "Heart Rate"
+POWER_KEY      = "Power"
+
+CADENCE_DB_KEY    = 1
+HEART_RATE_DB_KEY = 2
+POWER_DB_KEY      = 3
+
 def Log(str):
 	global g_debug
 	global g_root_dir
@@ -35,7 +43,7 @@ class DataListener(object):
 	def __init__(self, db):
 		self.db = db
 		self.db.create()
-		self.not_meta_data = [ "DeviceId", "ActivityId", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
+		self.not_meta_data = [ "DeviceId", "ActivityId", "ActivityName", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
 	def parse_json_str(self, str):
@@ -43,27 +51,27 @@ class DataListener(object):
 			decoder = json.JSONDecoder()
 			decoded_obj = json.loads(str)
 
-			# Parse required identifiers
+			# Parse required identifiers.
 			device_id = decoded_obj["DeviceId"]
 			activity_id = decoded_obj["ActivityId"]
 
-			# Parse optional identifiers
+			# Parse optional identifiers.
 			user_name = ""
 			try:
 				user_name = decoded_obj["User Name"]
 			except:
 				pass
 
-			# Parse the location data
+			# Parse the location data.
 			lat = decoded_obj["Latitude"]
 			lon = decoded_obj["Longitude"]
 			alt = decoded_obj["Altitude"]
 			self.db.create_location(device_id, activity_id, lat, lon, alt)
 			
-			# Clear the old metadata
-			self.db.clear_metadata_for_activity(device_id, activity_id)
+			# Clear the old metadata.
+			#self.db.clear_metadata_for_activity(device_id, activity_id)
 
-			# Parse the metadata looking for the timestamp
+			# Parse the metadata looking for the timestamp.
 			date_time = time.time()
 			try:
 				time_str = decoded_obj["Time"]
@@ -71,22 +79,29 @@ class DataListener(object):
 			except:
 				pass
 
-			# Parse the rest of the metadata
+			# Parse the rest of the data, which will be a combination of metadata and sensor data.
 			for item in decoded_obj.iteritems():
 				key = item[0]
 				value = item[1]
 				if not key in self.not_meta_data:
-					self.db.create_metadata(device_id, activity_id, date_time, key, value)
+					if key == CADENCE_KEY:
+						self.db.create_sensordata(device_id, activity_id, date_time, CADENCE_DB_KEY, value)
+					elif key == HEART_RATE_KEY:
+						self.db.create_sensordata(device_id, activity_id, date_time, HEART_RATE_DB_KEY, value)
+					elif key == POWER_KEY:
+						self.db.create_sensordata(device_id, activity_id, date_time, POWER_DB_KEY, value)
+					else:
+						self.db.create_metadata(device_id, activity_id, date_time, key, value)
 
 			# Update the user device association
 			if len(user_name):
 				user_db_id = self.db.getUserIdFromUserName(user_name)
 				device_db_id = self.db.getDeviceIdFromDeviceStr(device_id)
 				self.db.updateDevice(device_db_id, user_db_id)
-		except ValueError:
-			Log("ValueError in JSON data.")
+		except ValueError, e:
+			Log("ValueError in JSON data - reason " + str(e) + ".")
 		except KeyError, e:
-			Log("KeyError - reason " + str(e) + ".")
+			Log("KeyError in JSON data - reason " + str(e) + ".")
 		except:
 			Log("Error parsing JSON data.")
 			#exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -122,7 +137,7 @@ def Start():
 	global g_root_dir
 	
 	Log("Opening the database in " + g_root_dir)
-	db = ExertDb.Database(g_root_dir)
+	db = ExertDb.ExertDb(g_root_dir)
 	
 	listener = DataListener(db)
 	listener.run()

@@ -18,16 +18,33 @@ class Device(object):
 
 class Database(object):
 	dbFile = ""
-
+	
 	def __init__(self, rootDir):
 		self.dbFile = os.path.join(rootDir, 'exert.sqlite')
 		self.logFileName = os.path.join(rootDir, 'ExertDb.log')
 		super(Database, self).__init__()
-
+	
 	def log_error(self, str):
 		with open(self.logFileName, 'a') as f:
 			f.write(str + "\n")
 			f.close()
+
+class MysqlDatabase(Database):
+	def __init__(self, rootDir):
+		Database.__init__(self, rootDir)
+	
+	def connect(self):
+		pass
+
+	def execute(self, sql):
+		pass
+
+class SqliteDatabase(Database):
+	def __init__(self, rootDir):
+		Database.__init__(self, rootDir)
+
+	def connect(self):
+		pass
 
 	def execute(self, sql):
 		try:
@@ -42,6 +59,10 @@ class Database(object):
 			if con:
 				con.close()
 		return None
+
+class ExertDb(SqliteDatabase):
+	def __init__(self, rootDir):
+		SqliteDatabase.__init__(self, rootDir)
 
 	def quote_identifier(self, s, errors="strict"):
 		encodable = s.encode("utf-8", errors).decode("utf-8")
@@ -66,6 +87,11 @@ class Database(object):
 		except:
 			pass
 
+		try:
+			self.execute("create table sensordata (id integer primary key, deviceId integer, activityId integer, time integer, sensorType integer, value double)")
+		except:
+			pass
+	
 		try:
 			self.execute("create table user (id integer primary key, username text, realname text, hash text)")
 		except:
@@ -384,6 +410,55 @@ class Database(object):
 
 		try:
 			sql = "select time,value from metadata where key = " + self.quote_identifier(key) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			return self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return []
+
+	def create_sensordata(self, sensorType, activityId, dateTime, key, value):
+		if deviceStr is None:
+			self.log_error("Unexpected empty object")
+			return
+		if activityId is None:
+			self.log_error("Unexpected empty object")
+			return
+		if sensorType is None:
+			self.log_error("Unexpected empty object")
+			return
+		if value is None:
+			self.log_error("Unexpected empty object")
+			return
+		if len(deviceStr) == 0:
+			self.log_error("Device ID too short")
+			return
+
+		try:
+			if isinstance(value, str) or isinstance(value, unicode):
+				valueStr = "'" + value + "'"
+			else:
+				valueStr = str(value)
+				deviceId = self.retrieve_device_id_from_device_str(deviceStr)
+			sql = "insert into sensordata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(dateTime) + ", " + str(sensorType) + ", " + valueStr + ")"
+			self.execute(sql)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return
+	
+	def retrieve_sensordata(self, sensorType, deviceId, activityId):
+		if sensorType is None:
+			self.log_error("Unexpected empty object")
+			return None
+		if deviceId is None:
+			self.log_error("Unexpected empty object")
+			return None
+		if activityId is None:
+			self.log_error("Unexpected empty object")
+			return None
+		
+		try:
+			sql = "select time,value from sensordata where sensorType = " + str(sensorType) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
 			return self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
