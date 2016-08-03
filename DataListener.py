@@ -52,8 +52,9 @@ class DataListener(object):
 			decoded_obj = json.loads(str)
 
 			# Parse required identifiers.
-			device_id = decoded_obj["DeviceId"]
+			device_str = decoded_obj["DeviceId"]
 			activity_id = decoded_obj["ActivityId"]
+			device_id = self.db.retrieve_device_id_from_device_str(device_str)
 
 			# Parse optional identifiers.
 			user_name = ""

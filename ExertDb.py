@@ -17,16 +17,16 @@ class Device(object):
 		super(Device, self).__init__()
 
 class Database(object):
-	dbFile = ""
+	db_file = ""
 	
-	def __init__(self, rootDir):
-		self.dbFile = os.path.join(rootDir, 'exert.sqlite')
-		self.logFileName = os.path.join(rootDir, 'ExertDb.log')
+	def __init__(self, root_dir):
+		self.db_file = os.path.join(root_dir, 'exert.sqlite')
+		self.log_file_name = os.path.join(root_dir, 'ExertDb.log')
 		super(Database, self).__init__()
 	
-	def log_error(self, str):
-		with open(self.logFileName, 'a') as f:
-			f.write(str + "\n")
+	def log_error(self, log_str):
+		with open(self.log_file_name, 'a') as f:
+			f.write(str(log_str) + "\n")
 			f.close()
 
 class MysqlDatabase(Database):
@@ -48,13 +48,13 @@ class SqliteDatabase(Database):
 
 	def execute(self, sql):
 		try:
-			con = sqlite3.connect(self.dbFile)
+			con = sqlite3.connect(self.db_file)
 			with con:
 				cur = con.cursor()
 				cur.execute(sql)
 				return cur.fetchall()
 		except:
-			self.log_error("Database error:\n\tfile = " + self.dbFile + "\n\tsql = " + self.quote_identifier(sql))
+			self.log_error("Database error:\n\tfile = " + self.db_file + "\n\tsql = " + self.quote_identifier(sql))
 		finally:
 			if con:
 				con.close()
@@ -198,18 +198,18 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return ""
 
-	def create_followed_by_entry(self, username, followedByName):
+	def create_followed_by_entry(self, username, followed_by_name):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return False
-		if followedByName is None:
+		if followed_by_name is None:
 			self.log_error("Unexpected empty object")
 			return False
 
 		try:
-			userId = self.retrieve_user_id_from_username(username)
-			followerId = self.retrieve_user_id_from_username(followedByName)
-			sql = "insert into followedBy values(NULL, " + userId + ", " + followerId + ", 0)"
+			user_id = self.retrieve_user_id_from_username(username)
+			followerId = self.retrieve_user_id_from_username(followed_by_name)
+			sql = "insert into followedBy values(NULL, " + user_id + ", " + followerId + ", 0)"
 			rows = self.execute(sql)
 			return rows != None
 		except:
@@ -217,18 +217,18 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def create_following_entry(self, username, followingName):
+	def create_following_entry(self, username, following_name):
 		if username is None:
 			self.log_error("Unexpected empty object")
 			return False
-		if followingName is None:
+		if following_name is None:
 			self.log_error("Unexpected empty object")
 			return False
 
 		try:
-			userId = self.retrieve_user_id_from_username(username)
-			followerId = self.retrieve_user_id_from_username(followingName)
-			sql = "insert into following values(NULL, " + userId + ", " + followerId + ", 0)"
+			user_id = self.retrieve_user_id_from_username(username)
+			followerId = self.retrieve_user_id_from_username(following_name)
+			sql = "insert into following values(NULL, " + user_id + ", " + followerId + ", 0)"
 			rows = self.execute(sql)
 			return rows != None
 		except:
@@ -236,11 +236,11 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def create_device(self, deviceId, userId):
-		if deviceStr is None:
+	def create_device(self, device_str, user_id):
+		if device_str is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if len(deviceStr) == 0:
+		if len(device_str) == 0:
 			self.log_error("Device ID too short")
 			return None
 
@@ -251,21 +251,21 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return None
 	
-	def retrieve_device_id_from_device_str(self, deviceStr):
-		if deviceStr is None:
+	def retrieve_device_id_from_device_str(self, device_str):
+		if device_str is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if len(deviceStr) == 0:
+		if len(device_str) == 0:
 			self.log_error("Device ID too short")
 			return None
 
 		try:
-			sql = "select id from device where device = " + self.quote_identifier(deviceStr)
+			sql = "select id from device where device = " + self.quote_identifier(device_str)
 			rows = self.execute(sql)
 			if rows is None or len(rows) == 0:
-				sql = "insert into device values(NULL, " + self.quote_identifier(deviceStr) + ", 0)"
+				sql = "insert into device values(NULL, " + self.quote_identifier(device_str) + ", 0)"
 				rows = self.execute(sql)
-				sql = "select id from device where device = " + self.quote_identifier(deviceStr)
+				sql = "select id from device where device = " + self.quote_identifier(device_str)
 				rows = self.execute(sql)
 			return rows[0][0]
 		except:
@@ -297,13 +297,13 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return devices
 
-	def retrieve_most_recent_activity_id_for_device(self, deviceId):
-		if deviceId is None:
+	def retrieve_most_recent_activity_id_for_device(self, device_id):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 		
 		try:
-			sql = "select max(activityId) from location where deviceId = " + str(deviceId)
+			sql = "select max(activityId) from location where deviceId = " + str(device_id)
 			rows = self.execute(sql)
 			if rows != None and len(rows) > 0:
 				return rows[0][0]
@@ -312,63 +312,58 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return 0
 
-	def update_device(self, deviceId, userId):
-		if deviceId is None:
+	def update_device(self, device_id, user_id):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if userId is None:
+		if user_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 
 		try:
-			sql = "update device set userId = " + str(userId) + " where id = " + str(deviceId)
+			sql = "update device set userId = " + str(user_id) + " where id = " + str(device_id)
 			rows = self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def clear_metadata_for_device(self, deviceStr):
-		if deviceStr is None:
+	def clear_metadata_for_device(self, device_id):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
-			return
-		if len(deviceStr) == 0:
-			self.log_error("Device ID too short")
 			return
 
 		try:
-			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
-			if deviceId is not None:
-				sql = "delete from metadata where deviceId = " + str(deviceId)
+			if device_id is not None:
+				sql = "delete from metadata where deviceId = " + str(device_id)
 				self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def clear_metadata_for_activity(self, deviceStr, activityId):
-		if deviceStr is None:
+	def clear_metadata_for_activity(self, device_id, activity_id):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return
-		if len(deviceStr) == 0:
-			self.log_error("Device ID too short")
-			return
-		
+	
 		try:
-			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
-			if deviceId is not None:
-				sql = "delete from metadata where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			if device_id is not None:
+				sql = "delete from metadata where deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
 				self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def create_metadata(self, deviceStr, activityId, dateTime, key, value):
-		if deviceStr is None:
+	def create_metadata(self, device_id, activity_id, date_time, key, value):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return
-		if activityId is None:
+		if activity_id is None:
+			self.log_error("Unexpected empty object")
+			return
+		if date_time is None:
 			self.log_error("Unexpected empty object")
 			return
 		if key is None:
@@ -376,9 +371,6 @@ class ExertDb(SqliteDatabase):
 			return
 		if value is None:
 			self.log_error("Unexpected empty object")
-			return
-		if len(deviceStr) == 0:
-			self.log_error("Device ID too short")
 			return
 		if len(key) == 0:
 			self.log_error("Metadata key too short")
@@ -389,48 +381,47 @@ class ExertDb(SqliteDatabase):
 				valueStr = "'" + value + "'"
 			else:
 				valueStr = str(value)
-			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
-			sql = "insert into metadata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(dateTime) + ", '" + key + "', " + valueStr + ")"
+			sql = "insert into metadata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", '" + key + "', " + valueStr + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def retrieve_metadata(self, key, deviceId, activityId):
+	def retrieve_metadata(self, key, device_id, activity_id):
 		if key is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if deviceId is None:
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 
 		try:
-			sql = "select time,value from metadata where key = " + self.quote_identifier(key) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			sql = "select time,value from metadata where key = " + self.quote_identifier(key) + " and deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
 			return self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return []
 
-	def create_sensordata(self, sensorType, activityId, dateTime, key, value):
-		if deviceStr is None:
+	def create_sensordata(self, device_id, activity_id, date_time, sensor_type, value):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return
-		if sensorType is None:
+		if date_time is None:
+			self.log_error("Unexpected empty object")
+			return
+		if sensor_type is None:
 			self.log_error("Unexpected empty object")
 			return
 		if value is None:
 			self.log_error("Unexpected empty object")
-			return
-		if len(deviceStr) == 0:
-			self.log_error("Device ID too short")
 			return
 
 		try:
@@ -438,38 +429,37 @@ class ExertDb(SqliteDatabase):
 				valueStr = "'" + value + "'"
 			else:
 				valueStr = str(value)
-				deviceId = self.retrieve_device_id_from_device_str(deviceStr)
-			sql = "insert into sensordata values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(dateTime) + ", " + str(sensorType) + ", " + valueStr + ")"
+			sql = "insert into sensordata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", " + str(sensor_type) + ", " + valueStr + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return
 	
-	def retrieve_sensordata(self, sensorType, deviceId, activityId):
-		if sensorType is None:
+	def retrieve_sensordata(self, sensor_type, device_id, activity_id):
+		if sensor_type is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if deviceId is None:
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 		
 		try:
-			sql = "select time,value from sensordata where sensorType = " + str(sensorType) + " and deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			sql = "select time,value from sensordata where sensorType = " + str(sensor_type) + " and deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
 			return self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return []
 
-	def create_location(self, deviceStr, activityId, latitude, longitude, altitude):
-		if deviceStr is None:
+	def create_location(self, device_id, activity_id, latitude, longitude, altitude):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return
 		if latitude is None:
@@ -481,27 +471,27 @@ class ExertDb(SqliteDatabase):
 		if altitude is None:
 			self.log_error("Unexpected empty object")
 			return
+
 		try:
-			deviceId = self.retrieve_device_id_from_device_str(deviceStr)
-			sql = "insert into location values(NULL, " + str(deviceId) + ", " + str(activityId) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
+			sql = "insert into location values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(latitude) + ", " + str(longitude) + ", " + str(altitude) + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return
 
-	def retrieve_locations(self, deviceId, activityId):
-		if deviceId is None:
+	def retrieve_locations(self, device_id, activity_id):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 
 		locations = []
 
 		try:
-			sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			sql = "select latitude, longitude from location where deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
 			rows = self.execute(sql)
 			if rows != None:
 				for row in rows:
@@ -514,11 +504,11 @@ class ExertDb(SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return locations
 
-	def retrieve_most_recent_locations(self, deviceId, activityId, num):
-		if deviceId is None:
+	def retrieve_most_recent_locations(self, device_id, activity_id, num):
+		if device_id is None:
 			self.log_error("Unexpected empty object")
 			return None
-		if activityId is None:
+		if activity_id is None:
 			self.log_error("Unexpected empty object")
 			return None
 		if num is None:
@@ -528,13 +518,13 @@ class ExertDb(SqliteDatabase):
 		locations = []
 
 		try:
-			sql = "select count(*) from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId)
+			sql = "select count(*) from location where deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
 			rows = self.execute(sql)
 			if rows != None and len(rows) > 0:
 				rowCount = int(rows[0][0])
 				newRows = rowCount - num
 				if newRows > 0:
-					sql = "select latitude, longitude from location where deviceId = " + str(deviceId) + " and activityId = " + str(activityId) + " order by id desc limit " + str(num)
+					sql = "select latitude, longitude from location where deviceId = " + str(device_id) + " and activityId = " + str(activity_id) + " order by id desc limit " + str(num)
 					rows = self.execute(sql)
 					if rows != None:
 						for row in rows:
@@ -558,9 +548,9 @@ class ExertDb(SqliteDatabase):
 		following = []
 		
 		try:
-			userId = self.retrieve_user_id_from_username(username)
-			if userId != None:
-				sql = "select * from following where userId = " + str(userId)
+			user_id = self.retrieve_user_id_from_username(username)
+			if user_id != None:
+				sql = "select * from following where userId = " + str(user_id)
 				rows = self.execute(sql)
 				if rows != None:
 					for row in rows:
@@ -581,9 +571,9 @@ class ExertDb(SqliteDatabase):
 		followedBy = []
 
 		try:
-			userId = self.retrieve_user_id_from_username(username)
-			if userId != None:
-				sql = "select * from followedBy where userId = " + str(userId)
+			user_id = self.retrieve_user_id_from_username(username)
+			if user_id != None:
+				sql = "select * from followedBy where userId = " + str(user_id)
 				rows = self.execute(sql)
 				if rows != None:
 					for row in rows:
