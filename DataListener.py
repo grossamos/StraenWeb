@@ -46,10 +46,10 @@ class DataListener(object):
 		self.not_meta_data = [ "DeviceId", "ActivityId", "ActivityName", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
-	def parse_json_str(self, str):
+	def parse_json_str(self, jsonStr):
 		try:
 			decoder = json.JSONDecoder()
-			decoded_obj = json.loads(str)
+			decoded_obj = json.loads(jsonStr)
 
 			# Parse required identifiers.
 			device_str = decoded_obj["DeviceId"]
@@ -104,7 +104,7 @@ class DataListener(object):
 		except KeyError, e:
 			Log("KeyError in JSON data - reason " + str(e) + ".")
 		except:
-			Log("Error parsing JSON data.")
+			Log("Error parsing JSON data." + str(jsonStr))
 			#exc_type, exc_value, exc_traceback = sys.exc_info()
 			#traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
 			#traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
