@@ -9,6 +9,7 @@ import time
 import ExertDb
 
 g_debug = False
+g_dataLog = False
 g_root_dir = os.path.dirname(os.path.realpath(__file__))
 
 CADENCE_KEY    = "Cadence"
@@ -19,7 +20,7 @@ CADENCE_DB_KEY    = 1
 HEART_RATE_DB_KEY = 2
 POWER_DB_KEY      = 3
 
-def Log(str):
+def LogInfo(str):
 	global g_debug
 	global g_root_dir
 
@@ -32,8 +33,21 @@ def Log(str):
 		if g_debug:
 			print log_str
 
+def LogData(str):
+	global g_debug
+	global g_root_dir
+	
+	log_file_name = os.path.join(g_root_dir, "DataListenerInput.log")
+	with open(log_file_name, 'a') as f:
+		current_time = datetime.datetime.now()
+		log_str = current_time.isoformat() + ": " + str
+		f.write(log_str + "\n")
+		f.close()
+		if g_debug:
+			print log_str
+
 def signal_handler(signal, frame):
-	Log("Exiting...")
+	LogInfo("Exiting...")
 	sys.exit(0)
 
 class DataListener(object):
@@ -100,11 +114,11 @@ class DataListener(object):
 				device_db_id = self.db.getDeviceIdFromDeviceStr(device_id)
 				self.db.updateDevice(device_db_id, user_db_id)
 		except ValueError, e:
-			Log("ValueError in JSON data - reason " + str(e) + ".")
+			LogInfo("ValueError in JSON data - reason " + str(e) + ".")
 		except KeyError, e:
-			Log("KeyError in JSON data - reason " + str(e) + ".")
+			LogInfo("KeyError in JSON data - reason " + str(e) + ".")
 		except:
-			Log("Error parsing JSON data." + str(jsonStr))
+			LogInfo("Error parsing JSON data." + str(jsonStr))
 			#exc_type, exc_value, exc_traceback = sys.exc_info()
 			#traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
 			#traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
@@ -115,11 +129,11 @@ class DataListener(object):
 			return data
 		return None
 
-	def run(self):
+	def read_from_udp(self):
 		UDP_IP = ""
 		UDP_PORT = 5150
 
-		Log("Starting the app listener")
+		LogInfo("Starting the app listener")
 
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -129,15 +143,20 @@ class DataListener(object):
 				line = self.read_line(sock)
 				if line:
 					self.parse_json_str(line)
+					if g_dataLog:
+						LogData(line)
 		except:
-			Log("Unhandled exception in run().")
+			LogInfo("Unhandled exception in run().")
 
-		Log("App listener stopped")
+		LogInfo("App listener stopped")
+
+	def run(self):
+		self.read_from_udp()
 
 def Start():
 	global g_root_dir
 	
-	Log("Opening the database in " + g_root_dir)
+	LogInfo("Opening the database in " + g_root_dir)
 	db = ExertDb.ExertDb(g_root_dir)
 	
 	listener = DataListener(db)
@@ -152,6 +171,8 @@ if __name__ == "__main__":
 		
 		if arg == 'debug' or arg == '--debug':
 			g_debug = True
+		elif arg == 'datalog' or arg == '--datalog':
+			g_dataLog = True
 		elif arg == 'rootdir' or arg == '--rootdir':
 			i = i + 1
 			g_root_dir = sys.argv[i]

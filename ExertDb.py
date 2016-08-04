@@ -425,11 +425,7 @@ class ExertDb(SqliteDatabase):
 			return
 
 		try:
-			if isinstance(value, str) or isinstance(value, unicode):
-				valueStr = "'" + value + "'"
-			else:
-				valueStr = str(value)
-			sql = "insert into sensordata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", " + str(sensor_type) + ", " + valueStr + ")"
+			sql = "insert into sensordata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", " + str(sensor_type) + ", " + str(value) + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
