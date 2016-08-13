@@ -110,9 +110,8 @@ class DataListener(object):
 
 			# Update the user device association
 			if len(user_name):
-				user_db_id = self.db.getUserIdFromUserName(user_name)
-				device_db_id = self.db.getDeviceIdFromDeviceStr(device_id)
-				self.db.updateDevice(device_db_id, user_db_id)
+				user_id = self.db.retrieve_user_id_from_username(user_name)
+				self.db.update_device(device_id, user_id)
 		except ValueError, e:
 			LogInfo("ValueError in JSON data - reason " + str(e) + ".")
 		except KeyError, e:
