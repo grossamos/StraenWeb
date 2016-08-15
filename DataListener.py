@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import json
 import os
@@ -9,7 +10,7 @@ import time
 import ExertDb
 
 g_debug = False
-g_dataLog = False
+g_data_log = False
 g_root_dir = os.path.dirname(os.path.realpath(__file__))
 
 CADENCE_KEY    = "Cadence"
@@ -20,7 +21,7 @@ CADENCE_DB_KEY    = 1
 HEART_RATE_DB_KEY = 2
 POWER_DB_KEY      = 3
 
-def LogInfo(str):
+def log_info(str):
 	global g_debug
 	global g_root_dir
 
@@ -33,7 +34,7 @@ def LogInfo(str):
 		if g_debug:
 			print log_str
 
-def LogData(str):
+def log_data(str):
 	global g_debug
 	global g_root_dir
 	
@@ -47,16 +48,18 @@ def LogData(str):
 			print log_str
 
 def signal_handler(signal, frame):
-	LogInfo("Exiting...")
+	log_info("Exiting...")
 	sys.exit(0)
 
 class DataListener(object):
 	db = None
+	protocol = None
 	running = True
 
-	def __init__(self, db):
+	def __init__(self, db, protocol):
 		self.db = db
 		self.db.create()
+		self.protocol = protocol
 		self.not_meta_data = [ "DeviceId", "ActivityId", "ActivityName", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
 		super(DataListener, self).__init__()
 
@@ -113,11 +116,11 @@ class DataListener(object):
 				user_id = self.db.retrieve_user_id_from_username(user_name)
 				self.db.update_device(device_id, user_id)
 		except ValueError, e:
-			LogInfo("ValueError in JSON data - reason " + str(e) + ".")
+			log_info("ValueError in JSON data - reason " + str(e) + ".")
 		except KeyError, e:
-			LogInfo("KeyError in JSON data - reason " + str(e) + ".")
+			log_info("KeyError in JSON data - reason " + str(e) + ".")
 		except:
-			LogInfo("Error parsing JSON data." + str(jsonStr))
+			log_info("Error parsing JSON data." + str(jsonStr))
 			#exc_type, exc_value, exc_traceback = sys.exc_info()
 			#traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
 			#traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
@@ -128,11 +131,14 @@ class DataListener(object):
 			return data
 		return None
 
-	def read_from_udp(self):
+	def listen_for_rest_messages(self):
+		pass
+
+	def listen_for_udp_packets(self):
 		UDP_IP = ""
 		UDP_PORT = 5150
 
-		LogInfo("Starting the app listener")
+		log_info("Starting the app listener")
 
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -142,42 +148,50 @@ class DataListener(object):
 				line = self.read_line(sock)
 				if line:
 					self.parse_json_str(line)
-					if g_dataLog:
-						LogData(line)
+					if g_data_log:
+						log_data(line)
 		except:
-			LogInfo("Unhandled exception in run().")
+			log_info("Unhandled exception in run().")
 
-		LogInfo("App listener stopped")
+		log_info("App listener stopped")
 
 	def run(self):
-		self.read_from_udp()
+		if self.protocol == "rest":
+			self.listen_for_rest_messages()
+		else:
+			self.listen_for_udp_packets()
 
-def Start():
+def Start(protocol):
 	global g_root_dir
-	
-	LogInfo("Opening the database in " + g_root_dir)
+
+	log_info("Opening the database in " + g_root_dir)
 	db = ExertDb.ExertDb(g_root_dir)
-	
-	listener = DataListener(db)
+
+	listener = DataListener(db, protocol)
 	listener.run()
 
 if __name__ == "__main__":
 
 	signal.signal(signal.SIGINT, signal_handler)
 
-	for i in range(0,len(sys.argv)):
-		arg = sys.argv[i]
-		
-		if arg == 'debug' or arg == '--debug':
-			g_debug = True
-		elif arg == 'datalog' or arg == '--datalog':
-			g_dataLog = True
-		elif arg == 'rootdir' or arg == '--rootdir':
-			i = i + 1
-			g_root_dir = sys.argv[i]
+	# Parse command line options.
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--rootdir", type=str, action="store", default=os.path.dirname(os.path.realpath(__file__)), help="Directory for database and logs", required=False)
+	parser.add_argument("--protocol", type=str, action="store", default="udp", help="udp|rest", required=False)
+	parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
+	parser.add_argument("--datalog", action="store_true", default=False, help="", required=False)
+
+	try:
+		args = parser.parse_args()
+		g_root_dir = args.rootdir
+		g_debug = args.debug
+		g_data_log = args.datalog
+	except IOError as e:
+		parser.error(e)
+		sys.exit(1)
 
 	if g_debug:
-		Start()
+		Start(args.protocol)
 	else:
 		import daemon
 
