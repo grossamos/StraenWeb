@@ -2,12 +2,17 @@ import argparse
 import datetime
 import json
 import os
+import re
 import signal
 import socket
 import sys
-import traceback
+import threading
 import time
+import traceback
 import ExertDb
+
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+from SocketServer import ThreadingMixIn
 
 g_debug = False
 g_data_log = False
@@ -51,17 +56,41 @@ def signal_handler(signal, frame):
 	log_info("Exiting...")
 	sys.exit(0)
 
-class DataListener(object):
+class HTTPRequestHandler(BaseHTTPRequestHandler):
+	def do_POST(self):
+		if None != re.search('/api/v1/addlocation/*', self.path):
+			self.send_response(200)
+			self.end_headers()
+		else:
+			self.send_response(403)
+			self.send_header('Content-Type', 'application/json')
+			self.end_headers()
+		return
+ 
+	def do_GET(self):
+		self.send_response(404, 'Bad Request: resource not found')
+		self.send_header('Content-Type', 'application/json')
+		self.end_headers()
+		return
+ 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+	allow_reuse_address = True
+ 
+	def shutdown(self):
+		self.socket.close()
+		HTTPServer.shutdown(self)
+
+class UdpDataListener(object):
 	db = None
-	protocol = None
+	port = 5150
 	running = True
 
-	def __init__(self, db, protocol):
+	def __init__(self, db, port):
 		self.db = db
 		self.db.create()
-		self.protocol = protocol
+		self.port = port
 		self.not_meta_data = [ "DeviceId", "ActivityId", "ActivityName", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy" ]
-		super(DataListener, self).__init__()
+		super(UdpDataListener, self).__init__()
 
 	def parse_json_str(self, jsonStr):
 		try:
@@ -135,14 +164,11 @@ class DataListener(object):
 		pass
 
 	def listen_for_udp_packets(self):
-		UDP_IP = ""
-		UDP_PORT = 5150
-
 		log_info("Starting the app listener")
 
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			sock.bind((UDP_IP, UDP_PORT))
+			sock.bind(("", self.port))
 
 			while self.running:
 				line = self.read_line(sock)
@@ -156,19 +182,23 @@ class DataListener(object):
 		log_info("App listener stopped")
 
 	def run(self):
-		if self.protocol == "rest":
-			self.listen_for_rest_messages()
-		else:
-			self.listen_for_udp_packets()
+		self.listen_for_udp_packets()
 
-def Start(protocol):
+def Start(protocol, port):
 	global g_root_dir
 
 	log_info("Opening the database in " + g_root_dir)
 	db = ExertDb.ExertDb(g_root_dir)
 
-	listener = DataListener(db, protocol)
-	listener.run()
+	if protocol == "rest":
+		server = ThreadedHTTPServer(("", port), HTTPRequestHandler) 
+		server_thread = threading.Thread(target=server.serve_forever)
+		server_thread.daemon = True
+		server_thread.start()
+ 		server_thread.join()
+	else:
+		listener = UdpDataListener(db, port)
+		listener.run()
 
 if __name__ == "__main__":
 
@@ -178,6 +208,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--rootdir", type=str, action="store", default=os.path.dirname(os.path.realpath(__file__)), help="Directory for database and logs", required=False)
 	parser.add_argument("--protocol", type=str, action="store", default="udp", help="udp|rest", required=False)
+	parser.add_argument("--port", type=int, action="store", default=5150, help="Port on which to listen", required=False)
 	parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
 	parser.add_argument("--datalog", action="store_true", default=False, help="", required=False)
 
@@ -191,9 +222,9 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	if g_debug:
-		Start(args.protocol)
+		Start(args.protocol, args.port)
 	else:
 		import daemon
 
 		with daemon.DaemonContext():
-			Start()
+			Start(args.protocol, args.port)
