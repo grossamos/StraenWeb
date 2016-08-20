@@ -28,6 +28,12 @@ CADENCE_DB_KEY    = 1
 HEART_RATE_DB_KEY = 2
 POWER_DB_KEY      = 3
 
+def signal_handler(signal, frame):
+	log_info("Exiting...")
+	if g_listener is not None:
+		g_listener.shutdown()
+	sys.exit(0)
+
 def log_info(str):
 	global g_debug
 	global g_root_dir
@@ -54,33 +60,35 @@ def log_data(str):
 		if g_debug:
 			print log_str
 
-def signal_handler(signal, frame):
-	log_info("Exiting...")
-	if g_listener is not None:
-		g_listener.shutdown()
-	sys.exit(0)
-
-def parse_json_str(db, jsonStr):
+def parse_json_str(db, json_str):
 	try:
-		decoder = json.JSONDecoder()
-		decoded_obj = json.loads(jsonStr)
+		json_obj = json.loads(json_str)
+		parse_json_loc_obj(db, json_obj)
+	except ValueError, e:
+		log_info("ValueError in JSON data - reason " + str(e) + ". JSON str = " + str(json_str))
+	except KeyError, e:
+		log_info("KeyError in JSON data - reason " + str(e) + ". JSON str = " + str(json_str))
+	except:
+		log_info("Error parsing JSON data. JSON str = " + str(json_str))
 
+def parse_json_loc_obj(db, json_obj):
+	try:
 		# Parse required identifiers.
-		device_str = decoded_obj["DeviceId"]
-		activity_id = decoded_obj["ActivityId"]
+		device_str = json_obj["DeviceId"]
+		activity_id = json_obj["ActivityId"]
 		device_id = db.retrieve_device_id_from_device_str(device_str)
 
 		# Parse optional identifiers.
 		user_name = ""
 		try:
-			user_name = decoded_obj["User Name"]
+			user_name = json_obj["User Name"]
 		except:
 			pass
 
 		# Parse the location data.
-		lat = decoded_obj["Latitude"]
-		lon = decoded_obj["Longitude"]
-		alt = decoded_obj["Altitude"]
+		lat = json_obj["Latitude"]
+		lon = json_obj["Longitude"]
+		alt = json_obj["Altitude"]
 		db.create_location(device_id, activity_id, lat, lon, alt)
 
 		# Clear the old metadata.
@@ -89,13 +97,13 @@ def parse_json_str(db, jsonStr):
 		# Parse the metadata looking for the timestamp.
 		date_time = time.time()
 		try:
-			time_str = decoded_obj["Time"]
+			time_str = json_obj["Time"]
 			date_time = int(time_str)
 		except:
 			pass
 		
 		# Parse the rest of the data, which will be a combination of metadata and sensor data.
-		for item in decoded_obj.iteritems():
+		for item in json_obj.iteritems():
 			key = item[0]
 			value = item[1]
 			if not key in g_not_meta_data:
@@ -113,27 +121,29 @@ def parse_json_str(db, jsonStr):
 			user_id = db.retrieve_user_id_from_username(user_name)
 			db.update_device(device_id, user_id)
 	except ValueError, e:
-		log_info("ValueError in JSON data - reason " + str(e) + ".")
+		log_info("ValueError in JSON data - reason " + str(e) + ". JSON str = " + str(json_str))
 	except KeyError, e:
-		log_info("KeyError in JSON data - reason " + str(e) + ".")
+		log_info("KeyError in JSON data - reason " + str(e) + ". JSON str = " + str(json_str))
 	except:
-		log_info("Error parsing JSON data." + str(jsonStr))
-		#exc_type, exc_value, exc_traceback = sys.exc_info()
-		#traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
-		#traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
+		log_info("Error parsing JSON data. JSON str = " + str(json_str))
 
 class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_POST(self):
+		global g_root_dir
+
 		if re.search('/api/v1/addlocations', self.path) != None:
 			ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+
 			if ctype == 'multipart/form-data':
 				post_vars = cgi.parse_multipart(self.rfile, pdict)
 			elif ctype == 'application/x-www-form-urlencoded':
+				db = ExertDb.ExertDb(g_root_dir)
 				length = int(self.headers.getheader('content-length'))
 				post_vars = cgi.parse_qs(self.rfile.read(length), keep_blank_values = 1)
-				json_strs = post_vars.keys()
-				for json_str in json_strs:
-					parse_json_str(self.db, json_str)
+				locations_str = post_vars.keys()[0]
+				json_obj = json.loads(locations_str)
+				for location_obj in json_obj["locations"]:
+					parse_json_loc_obj(db, location_obj)
 			else:
 				post_vars = {}
 
@@ -152,12 +162,9 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 	allow_reuse_address = True
-	db = None
 	port = 8080
  
-	def __init__(self, db, port):
-		self.db = db
-		self.db.create()
+	def __init__(self, port):
 		self.port = port
 		BaseHTTPServer.HTTPServer.__init__(self, ("", self.port), HTTPRequestHandler)
 	
@@ -166,13 +173,10 @@ class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer)
 		BaseHTTPServer.HTTPServer.shutdown(self)
 
 class UdpDataListener(object):
-	db = None
-	port = 5150
 	running = True
+	port = 5150
 
-	def __init__(self, db, port):
-		self.db = db
-		self.db.create()
+	def __init__(self, port):
 		self.port = port
 		super(UdpDataListener, self).__init__()
 
@@ -186,16 +190,20 @@ class UdpDataListener(object):
 		pass
 
 	def listen_for_udp_packets(self):
+		global g_root_dir
+
 		log_info("Starting the app listener")
 
 		try:
+			db = ExertDb.ExertDb(g_root_dir)
+
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			sock.bind(("", self.port))
 
 			while self.running:
 				line = self.read_line(sock)
 				if line:
-					parse_json_str(self.db, line)
+					parse_json_str(db, line)
 					if g_data_log:
 						log_data(line)
 		except:
@@ -212,14 +220,15 @@ class UdpDataListener(object):
 def Start(protocol, port):
 	global g_root_dir
 
-	log_info("Opening the database in " + g_root_dir)
+	log_info("Creating the database in " + g_root_dir)
 	db = ExertDb.ExertDb(g_root_dir)
+	db.create()
 
 	if protocol == "rest":
-		g_listener = ThreadedHTTPServer(db, port)
+		g_listener = ThreadedHTTPServer(port)
 		g_listener.serve_forever()
 	else:
-		g_listener = UdpDataListener(db, port)
+		g_listener = UdpDataListener(port)
 		g_listener.run()
 
 if __name__ == "__main__":

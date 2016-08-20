@@ -263,7 +263,7 @@ class ExertDb(SqliteDatabase):
 			sql = "select id from device where device = " + self.quote_identifier(device_str)
 			rows = self.execute(sql)
 			if rows is None or len(rows) == 0:
-				sql = "insert into device values(NULL, " + self.quote_identifier(device_str) + ", 0)"
+				sql = "insert into device values(NULL, " + self.quote_identifier(device_str) + ", 0, 0)"
 				rows = self.execute(sql)
 				sql = "select id from device where device = " + self.quote_identifier(device_str)
 				rows = self.execute(sql)
