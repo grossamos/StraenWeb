@@ -162,7 +162,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 	allow_reuse_address = True
-	port = 8080
+	port = 8081
  
 	def __init__(self, port):
 		self.port = port
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--rootdir", type=str, action="store", default=os.path.dirname(os.path.realpath(__file__)), help="Directory for database and logs", required=False)
 	parser.add_argument("--protocol", type=str, action="store", default="udp", help="udp|rest", required=False)
-	parser.add_argument("--port", type=int, action="store", default=8080, help="Port on which to listen", required=False)
+	parser.add_argument("--port", type=int, action="store", default=8081, help="Port on which to listen", required=False)
 	parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
 	parser.add_argument("--datalog", action="store_true", default=False, help="", required=False)
 
