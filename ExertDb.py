@@ -43,6 +43,20 @@ class SqliteDatabase(Database):
 	def __init__(self, rootDir):
 		Database.__init__(self, rootDir)
 
+	def is_quoted(self, s):
+		if len(s) < 2:
+			return false
+		return s[0] == '\"' and s[len(s)-1] == '\"'
+
+	def quote_identifier(self, s, errors="strict"):
+		if self.is_quoted(s):
+			return s
+		encodable = s.encode("utf-8", errors).decode("utf-8")
+		null_index = encodable.find("\x00")
+		if null_index >= 0:
+			return ""
+		return "\"" + encodable.replace("\"", "\"\"") + "\""
+
 	def connect(self):
 		pass
 
@@ -63,13 +77,6 @@ class SqliteDatabase(Database):
 class ExertDb(SqliteDatabase):
 	def __init__(self, rootDir):
 		SqliteDatabase.__init__(self, rootDir)
-
-	def quote_identifier(self, s, errors="strict"):
-		encodable = s.encode("utf-8", errors).decode("utf-8")
-		null_index = encodable.find("\x00")
-		if null_index >= 0:
-			return ""
-		return "\"" + encodable.replace("\"", "\"\"") + "\""
 
 	def create(self):
 		try:
@@ -114,22 +121,22 @@ class ExertDb(SqliteDatabase):
 	
 	def create_user(self, username, realname, hash):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_user.__name__ + "Unexpected empty object: username")
 			return False
 		if realname is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_user.__name__ + "Unexpected empty object: realname")
 			return False
 		if hash is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_user.__name__ + "Unexpected empty object: hash")
 			return False
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(create_user.__name__ + "username too short")
 			return False
 		if len(realname) == 0:
-			self.log_error("realname too short")
+			self.log_error(create_user.__name__ + "realname too short")
 			return False
 		if len(hash) == 0:
-			self.log_error("hash too short")
+			self.log_error(create_user.__name__ + "hash too short")
 			return False
 
 		try:
@@ -143,10 +150,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_user_hash(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_user_hash.__name__ + "Unexpected empty object: username")
 			return 0
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_user_hash.__name__ + "username too short")
 			return 0
 		
 		try:
@@ -162,10 +169,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_user_id_from_username(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_user_id_from_username.__name__ + "Unexpected empty object: username")
 			return 0
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_user_id_from_username.__name__ + "username too short")
 			return 0
 
 		try:
@@ -181,10 +188,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_realname_from_username(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_realname_from_username.__name__ + "Unexpected empty object: username")
 			return ""
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_realname_from_username.__name__ + "username too short")
 			return ""
 		
 		try:
@@ -200,10 +207,10 @@ class ExertDb(SqliteDatabase):
 
 	def create_followed_by_entry(self, username, followed_by_name):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_followed_by_entry.__name__ + "Unexpected empty object: username")
 			return False
 		if followed_by_name is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_followed_by_entry.__name__ + "Unexpected empty object: followed_by_name")
 			return False
 
 		try:
@@ -219,10 +226,10 @@ class ExertDb(SqliteDatabase):
 
 	def create_following_entry(self, username, following_name):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_following_entry.__name__ + "Unexpected empty object: username")
 			return False
 		if following_name is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_following_entry.__name__ + "Unexpected empty object: following_name")
 			return False
 
 		try:
@@ -238,10 +245,10 @@ class ExertDb(SqliteDatabase):
 
 	def create_device(self, device_str, user_id):
 		if device_str is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_device.__name__ + "Unexpected empty object: device_str")
 			return None
 		if len(device_str) == 0:
-			self.log_error("Device ID too short")
+			self.log_error(create_device.__name__ + "Device ID too short")
 			return None
 
 		try:
@@ -253,10 +260,10 @@ class ExertDb(SqliteDatabase):
 	
 	def retrieve_device_id_from_device_str(self, device_str):
 		if device_str is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_device_id_from_device_str.__name__ + "Unexpected empty object: device_str")
 			return None
 		if len(device_str) == 0:
-			self.log_error("Device ID too short")
+			self.log_error(retrieve_device_id_from_device_str.__name__ + "Device ID too short")
 			return None
 
 		try:
@@ -275,10 +282,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_device_ids_for_username(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_device_ids_for_username.__name__ + "Unexpected empty object: username")
 			return None
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_device_ids_for_username.__name__ + "username too short")
 			return None
 
 		devices = []
@@ -299,7 +306,7 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_most_recent_activity_id_for_device(self, device_id):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_most_recent_activity_id_for_device.__name__ + "Unexpected empty object: device_id")
 			return None
 		
 		try:
@@ -314,10 +321,10 @@ class ExertDb(SqliteDatabase):
 
 	def update_device(self, device_id, user_id):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(update_device.__name__ + "Unexpected empty object: device_id")
 			return None
 		if user_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(update_device.__name__ + "Unexpected empty object: user_id")
 			return None
 
 		try:
@@ -330,7 +337,7 @@ class ExertDb(SqliteDatabase):
 
 	def clear_metadata_for_device(self, device_id):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(clear_metadata_for_device.__name__ + "Unexpected empty object: device_id")
 			return
 
 		try:
@@ -344,7 +351,7 @@ class ExertDb(SqliteDatabase):
 
 	def clear_metadata_for_activity(self, device_id, activity_id):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(clear_metadata_for_activity.__name__ + "Unexpected empty object: device_id")
 			return
 	
 		try:
@@ -358,22 +365,22 @@ class ExertDb(SqliteDatabase):
 
 	def create_metadata(self, device_id, activity_id, date_time, key, value):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_metadata.__name__ + "Unexpected empty object: device_id")
 			return
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_metadata.__name__ + "Unexpected empty object: activity_id")
 			return
 		if date_time is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_metadata.__name__ + "Unexpected empty object: date_time")
 			return
 		if key is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_metadata.__name__ + "Unexpected empty object: key")
 			return
 		if value is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_metadata.__name__ + "Unexpected empty object: value")
 			return
 		if len(key) == 0:
-			self.log_error("Metadata key too short")
+			self.log_error(create_metadata.__name__ + "Metadata key too short")
 			return
 
 		try:
@@ -390,13 +397,13 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_metadata(self, key, device_id, activity_id):
 		if key is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_metadata.__name__ + "Unexpected empty object: key")
 			return None
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_metadata.__name__ + "Unexpected empty object: device_id")
 			return None
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
 			return None
 
 		try:
@@ -409,19 +416,19 @@ class ExertDb(SqliteDatabase):
 
 	def create_sensordata(self, device_id, activity_id, date_time, sensor_type, value):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_sensordata.__name__ + "Unexpected empty object: device_id")
 			return
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_sensordata.__name__ + "Unexpected empty object: activity_id")
 			return
 		if date_time is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_sensordata.__name__ + "Unexpected empty object: date_time")
 			return
 		if sensor_type is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_sensordata.__name__ + "Unexpected empty object: sensor_type")
 			return
 		if value is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_sensordata.__name__ + "Unexpected empty object: value")
 			return
 
 		try:
@@ -434,13 +441,13 @@ class ExertDb(SqliteDatabase):
 	
 	def retrieve_sensordata(self, sensor_type, device_id, activity_id):
 		if sensor_type is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_sensordata.__name__ + "Unexpected empty object: sensor_type")
 			return None
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_sensordata.__name__ + "Unexpected empty object: device_id")
 			return None
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_sensordata.__name__ + "Unexpected empty object: activity_id")
 			return None
 		
 		try:
@@ -453,19 +460,19 @@ class ExertDb(SqliteDatabase):
 
 	def create_location(self, device_id, activity_id, latitude, longitude, altitude):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_location.__name__ + "Unexpected empty object: device_id")
 			return
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_location.__name__ + "Unexpected empty object: activity_id")
 			return
 		if latitude is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_location.__name__ + "Unexpected empty object: latitude")
 			return
 		if longitude is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_location.__name__ + "Unexpected empty object: longitude")
 			return
 		if altitude is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(create_location.__name__ + "Unexpected empty object: altitude")
 			return
 
 		try:
@@ -478,10 +485,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_locations(self, device_id, activity_id):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_locations.__name__ + "Unexpected empty object: device_id")
 			return None
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_locations.__name__ + "Unexpected empty object: activity_id")
 			return None
 
 		locations = []
@@ -502,13 +509,13 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_most_recent_locations(self, device_id, activity_id, num):
 		if device_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_most_recent_locations.__name__ + "Unexpected empty object: device_id")
 			return None
 		if activity_id is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_most_recent_locations.__name__ + "Unexpected empty object: activity_id")
 			return None
 		if num is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_most_recent_locations.__name__ + "Unexpected empty object: num")
 			return None
 
 		locations = []
@@ -535,10 +542,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_users_following(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
 			return None
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_users_following.__name__ + "username too short")
 			return None
 
 		following = []
@@ -558,10 +565,10 @@ class ExertDb(SqliteDatabase):
 
 	def retrieve_users_followed_by(self, username):
 		if username is None:
-			self.log_error("Unexpected empty object")
+			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
 			return None
 		if len(username) == 0:
-			self.log_error("username too short")
+			self.log_error(retrieve_users_followed_by.__name__ + "username too short")
 			return None
 
 		followedBy = []
