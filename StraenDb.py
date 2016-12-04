@@ -1,7 +1,9 @@
 import os
+import pymongo
 import sqlite3
 import sys
 import traceback
+import Database
 
 class Location(object):
 	def __init__(self):
@@ -16,67 +18,9 @@ class Device(object):
 		self.description = ""
 		super(Device, self).__init__()
 
-class Database(object):
-	db_file = ""
-	
-	def __init__(self, root_dir):
-		self.db_file = os.path.join(root_dir, 'straen.sqlite')
-		self.log_file_name = os.path.join(root_dir, 'database.log')
-		super(Database, self).__init__()
-	
-	def log_error(self, log_str):
-		with open(self.log_file_name, 'a') as f:
-			f.write(str(log_str) + "\n")
-			f.close()
-
-class MysqlDatabase(Database):
+class StraenSqlDb(Database.SqliteDatabase):
 	def __init__(self, rootDir):
-		Database.__init__(self, rootDir)
-	
-	def connect(self):
-		pass
-
-	def execute(self, sql):
-		pass
-
-class SqliteDatabase(Database):
-	def __init__(self, rootDir):
-		Database.__init__(self, rootDir)
-
-	def is_quoted(self, s):
-		if len(s) < 2:
-			return false
-		return s[0] == '\"' and s[len(s)-1] == '\"'
-
-	def quote_identifier(self, s, errors="strict"):
-		if self.is_quoted(s):
-			return s
-		encodable = s.encode("utf-8", errors).decode("utf-8")
-		null_index = encodable.find("\x00")
-		if null_index >= 0:
-			return ""
-		return "\"" + encodable.replace("\"", "\"\"") + "\""
-
-	def connect(self):
-		pass
-
-	def execute(self, sql):
-		try:
-			con = sqlite3.connect(self.db_file)
-			with con:
-				cur = con.cursor()
-				cur.execute(sql)
-				return cur.fetchall()
-		except:
-			self.log_error("Database error:\n\tfile = " + self.db_file + "\n\tsql = " + self.quote_identifier(sql))
-		finally:
-			if con:
-				con.close()
-		return None
-
-class StraenDb(SqliteDatabase):
-	def __init__(self, rootDir):
-		SqliteDatabase.__init__(self, rootDir)
+		Database.SqliteDatabase.__init__(self, rootDir)
 
 	def create(self):
 		try:
@@ -215,8 +159,8 @@ class StraenDb(SqliteDatabase):
 
 		try:
 			user_id = self.retrieve_user_id_from_username(username)
-			followerId = self.retrieve_user_id_from_username(followed_by_name)
-			sql = "insert into followedBy values(NULL, " + user_id + ", " + followerId + ", 0)"
+			follower_id = self.retrieve_user_id_from_username(followed_by_name)
+			sql = "insert into followedBy values(NULL, " + user_id + ", " + follower_id + ", 0)"
 			rows = self.execute(sql)
 			return rows != None
 		except:
@@ -234,8 +178,8 @@ class StraenDb(SqliteDatabase):
 
 		try:
 			user_id = self.retrieve_user_id_from_username(username)
-			followerId = self.retrieve_user_id_from_username(following_name)
-			sql = "insert into following values(NULL, " + user_id + ", " + followerId + ", 0)"
+			follower_id = self.retrieve_user_id_from_username(following_name)
+			sql = "insert into following values(NULL, " + user_id + ", " + follower_id + ", 0)"
 			rows = self.execute(sql)
 			return rows != None
 		except:
@@ -571,7 +515,7 @@ class StraenDb(SqliteDatabase):
 			self.log_error(retrieve_users_followed_by.__name__ + "username too short")
 			return None
 
-		followedBy = []
+		followed_by = []
 
 		try:
 			user_id = self.retrieve_user_id_from_username(username)
@@ -580,9 +524,96 @@ class StraenDb(SqliteDatabase):
 				rows = self.execute(sql)
 				if rows != None:
 					for row in rows:
-						followedBy.append(row[0])
+						followed_by.append(row[0])
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return followedBy
+		return followed_by
 
+class StraenMongoDb(Database.Database):
+	conn = None
+	db = None
+	users_collection = None
+	log_collection = None
+
+	def __init__(self, rootDir):
+		Database.Database.__init__(self, rootDir)
+
+	def create(self):
+		try:
+			self.conn = pymongo.MongoClient('localhost:27017')
+			self.db = self.conn['straendb']
+			self.users_collection = self.db['users']
+			self.location_collection = self.db['locations']
+		except pymongo.errors.ConnectionFailure, e:
+			self.log_error("Could not connect to MongoDB: %s" % e)
+
+	def create_user(self, username, realname, hash):
+		try:
+			post = {"username": username, "realname": realname, "hash": hash}
+			self.users_collection.insert(post)
+		except:
+			pass
+
+	def retrieve_user_hash(self, username):
+		pass
+
+	def retrieve_user_id_from_username(self, username):
+		pass
+
+	def retrieve_realname_from_username(self, username):
+		pass
+
+	def create_followed_by_entry(self, username, followed_by_name):
+		pass
+
+	def create_following_entry(self, username, following_name):
+		pass
+
+	def create_device(self, device_str, user_id):
+		pass
+
+	def retrieve_device_id_from_device_str(self, device_str):
+		pass
+
+	def retrieve_device_ids_for_username(self, username):
+		pass
+
+	def retrieve_most_recent_activity_id_for_device(self, device_id):
+		pass
+
+	def update_device(self, device_id, user_id):
+		pass
+
+	def clear_metadata_for_device(self, device_id):
+		pass
+
+	def clear_metadata_for_activity(self, device_id, activity_id):
+		pass
+
+	def create_metadata(self, device_id, activity_id, date_time, key, value):
+		pass
+
+	def retrieve_metadata(self, key, device_id, activity_id):
+		pass
+
+	def create_sensordata(self, device_id, activity_id, date_time, sensor_type, value):
+		pass
+
+	def retrieve_sensordata(self, sensor_type, device_id, activity_id):
+		pass
+
+	def create_location(self, device_id, activity_id, latitude, longitude, altitude):
+		pass
+
+	def retrieve_locations(self, device_id, activity_id):
+		pass
+
+	def retrieve_most_recent_locations(self, device_id, activity_id, num):
+		pass
+
+	def retrieve_users_following(self, username):
+		pass
+
+	def retrieve_users_followed_by(self, username):
+		pass

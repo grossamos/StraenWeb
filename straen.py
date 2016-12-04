@@ -8,29 +8,23 @@ import re
 import signal
 import sys
 import traceback
-import bcrypt
-import StraenDb
+import DataMgr
 
-from random import randint
 from dateutil.tz import tzlocal
 from cherrypy import tools
 from cherrypy.process.plugins import Daemonizer
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
-g_rootDir               = os.path.dirname(os.path.abspath(__file__))
-g_rootUrl               = 'http://straen-app.com/live'
-g_accessLog             = 'access.log'
-g_errorLog              = 'error.log'
-g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
-g_loginHtmlFile         = os.path.join(g_rootDir, 'login.html')
-g_createLoginHtmlFile   = os.path.join(g_rootDir, 'create_login.html')
-g_mapSingleHtmlFile     = os.path.join(g_rootDir, 'map_single.html')
-g_errorHtmlFile         = os.path.join(g_rootDir, 'error.html')
-g_errorLoggedInHtmlFile = os.path.join(g_rootDir, 'error_logged_in.html')
-g_userHtmlFile          = os.path.join(g_rootDir, 'user.html')
-g_aboutHtmlFile         = os.path.join(g_rootDir, 'about.html')
-g_app                   = None
+g_root_dir                  = os.path.dirname(os.path.abspath(__file__))
+g_root_url                  = 'http://exert-app.com/live'
+g_access_log                = 'exert_access.log'
+g_error_log                 = 'exert_error.log'
+g_tempmod_dir               = os.path.join(g_root_dir, 'tempmod')
+g_map_single_html_file      = os.path.join(g_root_dir, 'map_single.html')
+g_error_html_file           = os.path.join(g_root_dir, 'error.html')
+g_error_logged_in_html_file = os.path.join(g_root_dir, 'error_logged_in.html')
+g_app                       = None
 
 SESSION_KEY       = '_cp_username'
 MIN_PASSWORD_LEN  = 8
@@ -81,78 +75,6 @@ def require(*conditions):
 		f._cp_config['auth.require'].extend(conditions)
 		return f
 	return decorate
-
-class DataMgr(object):
-	def __init__(self):
-		self.db = StraenDb.StraenDb(g_rootDir)
-		super(DataMgr, self).__init__()
-
-	def terminate(self):
-		self.db = None
-
-	def authenticate_user(self, email, password):
-		if len(email) == 0:
-			return False, "An email address was not provided."
-		if len(password) < MIN_PASSWORD_LEN:
-			return False, ""
-
-		dbHash = self.db.retrieve_user_hash(email)
-		if dbHash == 0:
-			return False, "The user could not be found."
-		if dbHash == bcrypt.hashpw(password, dbHash):
-			loggedIn = True
-			authStr = "The user has been logged in."
-		else:
-			loggedIn = False
-			authStr = "The password is invalid."
-		return loggedIn, authStr
-
-	def create_user(self, email, realname, password1, password2, deviceStr):
-		if len(email) == 0:
-			return False, "Email address not provided."
-		if len(realname) == 0:
-			return False, "Name not provided."
-		if len(password1) < MIN_PASSWORD_LEN:
-			return False, "The password is too short."
-		if password1 != password2:
-			return False, "The passwords do not match."
-		if self.db.retrieve_user_hash(email) != 0:
-			return False, "The user already exists."
-
-		salt = bcrypt.gensalt()
-		hash = bcrypt.hashpw(password1, salt)
-		if not self.db.create_user(email, realname, hash):
-			return False, ""
-
-		userId = self.db.retrieve_user_id_from_username(email)
-
-		if len(deviceStr) > 0:
-			deviceId = self.db.retrieve_device_id_from_device_str(deviceStr)
-			self.db.update_device(deviceId, userId)
-		
-		return True, "The user was created."
-
-	def list_users_followed_by(self, email):
-		return self.db.retrieve_users_followed_by(email)
-
-	def list_users_following(self, email):
-		return self.db.retrieve_users_following(email)
-
-	def invite_to_follow(self, email, followedByName):
-		if len(email) == 0:
-			return False
-		if len(followedByName) == 0:
-			return False
-
-		return self.db.create_followed_by_entry(email, followedByName)
-
-	def request_to_follow(self, email, followingName):
-		if len(email) == 0:
-			return False
-		if len(followingName) == 0:
-			return False
-
-		return self.db.create_following_entry(email, followedByName)
 
 class StraenWeb(object):
 	_cp_config = {
@@ -329,13 +251,13 @@ class StraenWeb(object):
 	# Helper function for rendering the map corresonding to a specific device and activity.
 	def render_page_for_activity(self, deviceStr, deviceId, activityId):
 		if deviceStr is None or deviceId is None:
-			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
+			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
+			return my_template.render(root_url=g_root_url, error="There is no data for the specified device.")
 
 		locations = self.mgr.db.retrieve_locations(deviceId, activityId)
 		if locations is None or len(locations) == 0:
-			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="There is no data for the specified device.")
+			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
+			return my_template.render(root_url=g_root_url, error="There is no data for the specified device.")
 
 		route = ""
 		centerLat = 0
@@ -372,14 +294,14 @@ class StraenWeb(object):
 		for value in powers:
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
+		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
+		return my_template.render(root_url=g_root_url, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	# Helper function for rendering the map corresonding to a multiple devices.
 	def render_page_for_multiple_device_ids(self, deviceIds, userId):
 		if deviceIds is None:
-			myTemplate = Template(filename=g_errorLoggedInHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, error="No device IDs were specified.")
+			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
+			return my_template.render(root_url=g_root_url, error="No device IDs were specified.")
 
 		routeCoordinates = ""
 		centerLat = 0
@@ -404,17 +326,17 @@ class StraenWeb(object):
 				lastLat = locations[len(locations) - 1].latitude
 				lastLon = locations[len(locations) - 1].longitude
 		
-		myTemplate = Template(filename=g_mapSingleHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl, centerLat=centerLat, centerLon=centerLon, lastLat=lastLat, lastLon=lastLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
+		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
+		return my_template.render(root_url=g_root_url, centerLat=centerLat, centerLon=centerLon, lastLat=lastLat, lastLon=lastLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
 
 	# Renders the errorpage.
 	@cherrypy.expose
 	def error(self, str=None):
 		cherrypy.response.status = 500
-		myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
+		my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
 		if str is None:
 			str = "Internal Error."
-		return myTemplate.render(root_url=g_rootUrl, error=str)
+		return my_template.render(root_url=g_root_url, error=str)
 
 	# Renders the map page for a single device.
 	@cherrypy.expose
@@ -422,8 +344,8 @@ class StraenWeb(object):
 		try:
 			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
 			if deviceId is None:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request. Unknown device ID.")
+				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+				result = my_template.render(root_url=g_root_url, error="Unable to process the request. Unknown device ID.")
 			else:
 				activityIdStr = cherrypy.request.params.get("activityId")
 				if activityIdStr is None:
@@ -486,9 +408,10 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def user(self, email, *args, **kw):
 		try:
+			user_html_file = os.path.join(g_root_dir, 'user.html')
 			realname = self.mgr.db.retrieve_realname_from_username(email)
-			myTemplate = Template(filename=g_userHtmlFile, module_directory=g_tempmodDir)
-			return myTemplate.render(root_url=g_rootUrl, email=email, name=realname, error="Internal Error.")
+			my_template = Template(filename=user_html_file, module_directory=g_tempmod_dir)
+			return my_template.render(root_url=g_root_url, email=email, name=realname, error="Internal Error.")
 		except:
 			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
 		return self.error()
@@ -501,8 +424,8 @@ class StraenWeb(object):
 			if self.mgr.invite_to_follow(email, target_email):
 				result = ""
 			else:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+				result = my_template.render(root_url=g_root_url, error="Unable to process the request.")
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in invite_to_follow', 'EXEC', logging.WARNING)
@@ -516,8 +439,8 @@ class StraenWeb(object):
 			if self.mgr.request_to_follow(email, target_email):
 				result = ""
 			else:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				result = myTemplate.render(root_url=g_rootUrl, error="Unable to process the request.")
+				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+				result = my_template.render(root_url=g_root_url, error="Unable to process the request.")
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
@@ -530,21 +453,21 @@ class StraenWeb(object):
 			email = cherrypy.request.params.get("email")
 			password = cherrypy.request.params.get("password")
 			if email is None or password is None:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				result = myTemplate.render(root_url=g_rootUrl, error="An email address and password were not provided")
+				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+				result = my_template.render(root_url=g_root_url, error="An email address and password were not provided")
 			else:
-				userLoggedIn, infoStr = self.mgr.authenticate_user(email, password)
-				if userLoggedIn:
+				user_logged_in, info_str = self.mgr.authenticate_user(email, password)
+				if user_logged_in:
 					cherrypy.session.regenerate()
 					cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
 					result = self.user(email, None, None)
 				else:
-					myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-					errorMsg = "Unable to authenticate the user."
-					if len(infoStr) > 0:
-						errorMsg += " "
-						errorMsg += infoStr
-					result = myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+					my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+					error_msg = "Unable to authenticate the user."
+					if len(info_str) > 0:
+						error_msg += " "
+						error_msg += info_str
+					result = my_template.render(root_url=g_root_url, error=error_msg)
 			return result
 		except:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -555,18 +478,18 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def submit_new_login(self, email, realname, password1, password2, *args, **kw):
 		try:
-			userCreated, infoStr = self.mgr.create_user(email, realname, password1, password2, "")
-			if userCreated:
+			user_created, info_str = self.mgr.create_user(email, realname, password1, password2, "")
+			if user_created:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
 				result = self.user(email, *args, **kw)
 			else:
-				myTemplate = Template(filename=g_errorHtmlFile, module_directory=g_tempmodDir)
-				errorMsg = "Unable to create the user."
-				if len(infoStr) > 0:
-					errorMsg += " "
-					errorMsg += infoStr
-				result = myTemplate.render(root_url=g_rootUrl, error=errorMsg)
+				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+				error_msg = "Unable to create the user."
+				if len(info_str) > 0:
+					error_msg += " "
+					error_msg += info_str
+				result = my_template.render(root_url=g_root_url, error=error_msg)
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in submit_new_login', 'EXEC', logging.WARNING)
@@ -575,20 +498,23 @@ class StraenWeb(object):
 	# Renders the login page.
 	@cherrypy.expose
 	def login(self):
-		myTemplate = Template(filename=g_loginHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl)
+		login_html_file = os.path.join(g_root_dir, 'login.html')
+		my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
+		return my_template.render(root_url=g_root_url)
 
 	# Renders the create login page.
 	@cherrypy.expose
 	def create_login(self):
-		myTemplate = Template(filename=g_createLoginHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl)
+		create_login_html_file = os.path.join(g_root_dir, 'create_login.html')
+		my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
+		return my_template.render(root_url=g_root_url)
 
 	# Renders the about page.
 	@cherrypy.expose
 	def about(self):
-		myTemplate = Template(filename=g_aboutHtmlFile, module_directory=g_tempmodDir)
-		return myTemplate.render(root_url=g_rootUrl)
+		about_html_file = os.path.join(g_root_dir, 'about.html')
+		my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
+		return my_template.render(root_url=g_root_url)
 
 	# Renders the index page.
 	@cherrypy.expose
@@ -603,7 +529,7 @@ for arg in sys.argv:
 		debug = True
 
 if debug:
-	g_rootUrl = ""
+	g_root_url = ""
 else:
 	Daemonizer(cherrypy.engine).subscribe()
 
@@ -611,13 +537,13 @@ signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
 mako.directories = "templates"
 
-mgr = DataMgr()
+mgr = DataMgr.DataMgr(g_root_dir)
 g_app = StraenWeb(mgr)
 
 conf = {
 	'/':
 	{
-		'tools.staticdir.root': g_rootDir
+		'tools.staticdir.root': g_root_dir
 	},
 	'/css':
 	{
@@ -639,7 +565,7 @@ conf = {
 cherrypy.config.update( {
 					   'server.socket_host': '127.0.0.1',
 					   'requests.show_tracebacks': False,
-					   'log.access_file': g_accessLog,
-					   'log.error_file': g_errorLog } )
+					   'log.access_file': g_access_log,
+					   'log.error_file': g_error_log } )
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 cherrypy.quickstart(g_app, config=conf)
