@@ -21,13 +21,12 @@ g_root_url                  = 'http://exert-app.com/live'
 g_access_log                = 'exert_access.log'
 g_error_log                 = 'exert_error.log'
 g_tempmod_dir               = os.path.join(g_root_dir, 'tempmod')
-g_map_single_html_file      = os.path.join(g_root_dir, 'map_single.html')
-g_error_html_file           = os.path.join(g_root_dir, 'error.html')
-g_error_logged_in_html_file = os.path.join(g_root_dir, 'error_logged_in.html')
+g_map_single_html_file      = os.path.join(g_root_dir, 'html', 'map_single.html')
+g_error_html_file           = os.path.join(g_root_dir, 'html', 'error.html')
+g_error_logged_in_html_file = os.path.join(g_root_dir, 'html', 'error_logged_in.html')
 g_app                       = None
 
 SESSION_KEY       = '_cp_username'
-MIN_PASSWORD_LEN  = 8
 
 NAME_KEY          = "Name"
 TIME_KEY          = "Time"
@@ -332,10 +331,13 @@ class StraenWeb(object):
 	# Renders the errorpage.
 	@cherrypy.expose
 	def error(self, str=None):
-		cherrypy.response.status = 500
-		my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-		if str is None:
-			str = "Internal Error."
+		try:
+			cherrypy.response.status = 500
+			my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+			if str is None:
+				str = "Internal Error."
+		except:
+			pass
 		return my_template.render(root_url=g_root_url, error=str)
 
 	# Renders the map page for a single device.
@@ -408,27 +410,12 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def user(self, email, *args, **kw):
 		try:
-			user_html_file = os.path.join(g_root_dir, 'user.html')
+			user_html_file = os.path.join(g_root_dir, 'html', 'user.html')
 			realname = self.mgr.db.retrieve_realname_from_username(email)
 			my_template = Template(filename=user_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(root_url=g_root_url, email=email, name=realname, error="Internal Error.")
 		except:
 			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
-		return self.error()
-
-	# Renders the page for inviting a follower
-	@cherrypy.expose
-	@require()
-	def invite_to_follow(self, email, target_email, *args, **kw):
-		try:
-			if self.mgr.invite_to_follow(email, target_email):
-				result = ""
-			else:
-				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-				result = my_template.render(root_url=g_root_url, error="Unable to process the request.")
-			return result
-		except:
-			cherrypy.log.error('Unhandled exception in invite_to_follow', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the page for inviting someone to follow
@@ -452,9 +439,10 @@ class StraenWeb(object):
 		try:
 			email = cherrypy.request.params.get("email")
 			password = cherrypy.request.params.get("password")
+
 			if email is None or password is None:
 				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-				result = my_template.render(root_url=g_root_url, error="An email address and password were not provided")
+				result = my_template.render(root_url=g_root_url, error="An email address and password were not provided.")
 			else:
 				user_logged_in, info_str = self.mgr.authenticate_user(email, password)
 				if user_logged_in:
@@ -470,8 +458,7 @@ class StraenWeb(object):
 					result = my_template.render(root_url=g_root_url, error=error_msg)
 			return result
 		except:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			print repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
+			cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Creates a new login
@@ -498,23 +485,35 @@ class StraenWeb(object):
 	# Renders the login page.
 	@cherrypy.expose
 	def login(self):
-		login_html_file = os.path.join(g_root_dir, 'login.html')
-		my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(root_url=g_root_url)
+		try:
+			login_html_file = os.path.join(g_root_dir, 'html', 'login.html')
+			my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
+			result = my_template.render(root_url=g_root_url)
+		except:
+			result = self.error()
+		return result
 
 	# Renders the create login page.
 	@cherrypy.expose
 	def create_login(self):
-		create_login_html_file = os.path.join(g_root_dir, 'create_login.html')
-		my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(root_url=g_root_url)
+		try:
+			create_login_html_file = os.path.join(g_root_dir, 'html', 'create_login.html')
+			my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
+			result = my_template.render(root_url=g_root_url)
+		except:
+			result = self.error()
+		return result
 
 	# Renders the about page.
 	@cherrypy.expose
 	def about(self):
-		about_html_file = os.path.join(g_root_dir, 'about.html')
-		my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(root_url=g_root_url)
+		try:
+			about_html_file = os.path.join(g_root_dir, 'html', 'about.html')
+			my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
+			result = my_template.render(root_url=g_root_url)
+		except:
+			result = self.error()
+		return result
 
 	# Renders the index page.
 	@cherrypy.expose

@@ -149,25 +149,6 @@ class StraenSqlDb(Database.SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return ""
 
-	def create_followed_by_entry(self, username, followed_by_name):
-		if username is None:
-			self.log_error(create_followed_by_entry.__name__ + "Unexpected empty object: username")
-			return False
-		if followed_by_name is None:
-			self.log_error(create_followed_by_entry.__name__ + "Unexpected empty object: followed_by_name")
-			return False
-
-		try:
-			user_id = self.retrieve_user_id_from_username(username)
-			follower_id = self.retrieve_user_id_from_username(followed_by_name)
-			sql = "insert into followedBy values(NULL, " + user_id + ", " + follower_id + ", 0)"
-			rows = self.execute(sql)
-			return rows != None
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return False
-
 	def create_following_entry(self, username, following_name):
 		if username is None:
 			self.log_error(create_following_entry.__name__ + "Unexpected empty object: username")
@@ -329,10 +310,10 @@ class StraenSqlDb(Database.SqliteDatabase):
 
 		try:
 			if isinstance(value, str) or isinstance(value, unicode):
-				valueStr = "'" + value + "'"
+				value_str = "'" + value + "'"
 			else:
-				valueStr = str(value)
-			sql = "insert into metadata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", '" + key + "', " + valueStr + ")"
+				value_str = str(value)
+			sql = "insert into metadata values(NULL, " + str(device_id) + ", " + str(activity_id) + ", " + str(date_time) + ", '" + key + "', " + value_str + ")"
 			self.execute(sql)
 		except:
 			traceback.print_exc(file=sys.stdout)
@@ -538,6 +519,7 @@ class StraenMongoDb(Database.Database):
 
 	def __init__(self, rootDir):
 		Database.Database.__init__(self, rootDir)
+		self.create()
 
 	def create(self):
 		try:
@@ -552,8 +534,11 @@ class StraenMongoDb(Database.Database):
 		try:
 			post = {"username": username, "realname": realname, "hash": hash}
 			self.users_collection.insert(post)
+			return True
 		except:
-			pass
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_user_hash(self, username):
 		pass
@@ -562,9 +547,6 @@ class StraenMongoDb(Database.Database):
 		pass
 
 	def retrieve_realname_from_username(self, username):
-		pass
-
-	def create_followed_by_entry(self, username, followed_by_name):
 		pass
 
 	def create_following_entry(self, username, following_name):
