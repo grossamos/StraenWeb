@@ -17,9 +17,9 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 g_root_dir                  = os.path.dirname(os.path.abspath(__file__))
-g_root_url                  = 'http://exert-app.com/live'
-g_access_log                = 'exert_access.log'
-g_error_log                 = 'exert_error.log'
+g_root_url                  = 'http://straen-app.com/live'
+g_access_log                = 'access.log'
+g_error_log                 = 'error.log'
 g_tempmod_dir               = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file      = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_html_file           = os.path.join(g_root_dir, 'html', 'error.html')
