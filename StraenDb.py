@@ -20,8 +20,8 @@ class Database(object):
 	db_file = ""
 	
 	def __init__(self, root_dir):
-		self.db_file = os.path.join(root_dir, 'exert.sqlite')
-		self.log_file_name = os.path.join(root_dir, 'ExertDb.log')
+		self.db_file = os.path.join(root_dir, 'straen.sqlite')
+		self.log_file_name = os.path.join(root_dir, 'database.log')
 		super(Database, self).__init__()
 	
 	def log_error(self, log_str):
@@ -74,7 +74,7 @@ class SqliteDatabase(Database):
 				con.close()
 		return None
 
-class ExertDb(SqliteDatabase):
+class StraenDb(SqliteDatabase):
 	def __init__(self, rootDir):
 		SqliteDatabase.__init__(self, rootDir)
 

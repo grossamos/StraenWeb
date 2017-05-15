@@ -9,7 +9,7 @@ import signal
 import sys
 import traceback
 import bcrypt
-import ExertDb
+import StraenDb
 
 from random import randint
 from dateutil.tz import tzlocal
@@ -19,9 +19,9 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 g_rootDir               = os.path.dirname(os.path.abspath(__file__))
-g_rootUrl               = 'http://exert-app.com/live'
-g_accessLog             = 'exert_access.log'
-g_errorLog              = 'exert_error.log'
+g_rootUrl               = 'http://straen-app.com/live'
+g_accessLog             = 'access.log'
+g_errorLog              = 'error.log'
 g_tempmodDir            = os.path.join(g_rootDir, 'tempmod')
 g_loginHtmlFile         = os.path.join(g_rootDir, 'login.html')
 g_createLoginHtmlFile   = os.path.join(g_rootDir, 'create_login.html')
@@ -84,7 +84,7 @@ def require(*conditions):
 
 class DataMgr(object):
 	def __init__(self):
-		self.db = ExertDb.ExertDb(g_rootDir)
+		self.db = StraenDb.StraenDb(g_rootDir)
 		super(DataMgr, self).__init__()
 
 	def terminate(self):
@@ -154,7 +154,7 @@ class DataMgr(object):
 
 		return self.db.create_following_entry(email, followedByName)
 
-class ExertWeb(object):
+class StraenWeb(object):
 	_cp_config = {
 		'tools.sessions.on': True,
 		'tools.auth.on': True
@@ -162,10 +162,10 @@ class ExertWeb(object):
 
 	def __init__(self, mgr):
 		self.mgr = mgr
-		super(ExertWeb, self).__init__()
+		super(StraenWeb, self).__init__()
 
 	def terminate(self):
-		print "Terminating ExertWeb"
+		print "Terminating"
 		self.mgr.terminate()
 		self.mgr = None
 
@@ -612,7 +612,7 @@ mako.collection_size = 100
 mako.directories = "templates"
 
 mgr = DataMgr()
-g_app = ExertWeb(mgr)
+g_app = StraenWeb(mgr)
 
 conf = {
 	'/':
