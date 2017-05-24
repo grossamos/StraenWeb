@@ -1,11 +1,11 @@
 import bcrypt
-import ExertDb
+import StraenDb
 
 MIN_PASSWORD_LEN  = 8
 
 class DataMgr(object):
 	def __init__(self, root_dir):
-		self.db = ExertDb.ExertSqlDb(root_dir)
+		self.db = StraenDb.MongoDb(root_dir)
 		super(DataMgr, self).__init__()
 
 	def terminate(self):

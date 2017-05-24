@@ -199,7 +199,7 @@ class StraenWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_following(self, email=None, *args, **kw):
+	def list_users_following(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 		
@@ -218,13 +218,13 @@ class StraenWeb(object):
 			
 			return response
 		except:
-			cherrypy.log.error('Unhandled exception in liser_users_following', 'EXEC', logging.WARNING)
+			cherrypy.log.error('Unhandled exception in list_users_following', 'EXEC', logging.WARNING)
 
 		return ""
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def liser_users_followed_by(self, email=None, *args, **kw):
+	def list_users_followed_by(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 
@@ -243,7 +243,7 @@ class StraenWeb(object):
 			
 			return response
 		except:
-			cherrypy.log.error('Unhandled exception in liser_users_followed_by', 'EXEC', logging.WARNING)
+			cherrypy.log.error('Unhandled exception in list_users_followed_by', 'EXEC', logging.WARNING)
 
 		return ""
 

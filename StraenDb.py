@@ -18,7 +18,7 @@ class Device(object):
 		self.description = ""
 		super(Device, self).__init__()
 
-class StraenSqlDb(Database.SqliteDatabase):
+class SqlDb(Database.SqliteDatabase):
 	def __init__(self, rootDir):
 		Database.SqliteDatabase.__init__(self, rootDir)
 
@@ -511,7 +511,7 @@ class StraenSqlDb(Database.SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return followed_by
 
-class StraenMongoDb(Database.Database):
+class MongoDb(Database.Database):
 	conn = None
 	db = None
 	users_collection = None
