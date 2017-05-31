@@ -18,16 +18,11 @@ class Device(object):
 		self.description = ""
 		super(Device, self).__init__()
 
-class SqlDb(Database.SqliteDatabase):
+class SqliteDatabase(Database.SqliteDatabase):
 	def __init__(self, rootDir):
 		Database.SqliteDatabase.__init__(self, rootDir)
 
 	def create(self):
-		try:
-			self.execute("create table activity (id integer primary key, name text, activityType integer)")
-		except:
-			pass
-
 		try:
 			self.execute("create table location (id integer primary key, deviceId integer, activityId integer, latitude double, longitude double, altitude double)")
 		except:
@@ -95,10 +90,10 @@ class SqlDb(Database.SqliteDatabase):
 	def retrieve_user_hash(self, username):
 		if username is None:
 			self.log_error(retrieve_user_hash.__name__ + "Unexpected empty object: username")
-			return 0
+			return None
 		if len(username) == 0:
 			self.log_error(retrieve_user_hash.__name__ + "username too short")
-			return 0
+			return None
 		
 		try:
 			sql = "select hash from user where username = " + self.quote_identifier(username)
@@ -114,40 +109,40 @@ class SqlDb(Database.SqliteDatabase):
 	def retrieve_user_id_from_username(self, username):
 		if username is None:
 			self.log_error(retrieve_user_id_from_username.__name__ + "Unexpected empty object: username")
-			return 0
+			return None
 		if len(username) == 0:
 			self.log_error(retrieve_user_id_from_username.__name__ + "username too short")
-			return 0
+			return None
 
 		try:
 			sql = "select id from user where username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
 			if rows != None and len(rows) > 0:
 				return rows[0][0]
-			return 0
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return 0
+		return None
 
 	def retrieve_realname_from_username(self, username):
 		if username is None:
 			self.log_error(retrieve_realname_from_username.__name__ + "Unexpected empty object: username")
-			return ""
+			return None
 		if len(username) == 0:
 			self.log_error(retrieve_realname_from_username.__name__ + "username too short")
-			return ""
+			return None
 		
 		try:
 			sql = "select realname from user where username = " + self.quote_identifier(username)
 			rows = self.execute(sql)
 			if rows != None and len(rows) > 0:
 				return rows[0][0]
-			return ""
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return ""
+		return None
 
 	def create_following_entry(self, username, following_name):
 		if username is None:
@@ -206,14 +201,14 @@ class SqlDb(Database.SqliteDatabase):
 		return None
 
 	def retrieve_device_ids_for_username(self, username):
+		devices = []
+
 		if username is None:
 			self.log_error(retrieve_device_ids_for_username.__name__ + "Unexpected empty object: username")
-			return None
+			return devices
 		if len(username) == 0:
 			self.log_error(retrieve_device_ids_for_username.__name__ + "username too short")
-			return None
-
-		devices = []
+			return devices
 
 		try:
 			sql = "select device.id, device.device from device inner join user on device.userId=user.id and user.username = " + self.quote_identifier(username)
@@ -242,7 +237,7 @@ class SqlDb(Database.SqliteDatabase):
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return 0
+		return None
 
 	def update_device(self, device_id, user_id):
 		if device_id is None:
@@ -466,14 +461,14 @@ class SqlDb(Database.SqliteDatabase):
 		return locations
 
 	def retrieve_users_following(self, username):
+		following = []
+
 		if username is None:
 			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
-			return None
+			return following
 		if len(username) == 0:
 			self.log_error(retrieve_users_following.__name__ + "username too short")
-			return None
-
-		following = []
+			return following
 		
 		try:
 			user_id = self.retrieve_user_id_from_username(username)
@@ -489,14 +484,14 @@ class SqlDb(Database.SqliteDatabase):
 		return following
 
 	def retrieve_users_followed_by(self, username):
+		followed_by = []
+
 		if username is None:
 			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
-			return None
+			return followed_by
 		if len(username) == 0:
 			self.log_error(retrieve_users_followed_by.__name__ + "username too short")
-			return None
-
-		followed_by = []
+			return followed_by
 
 		try:
 			user_id = self.retrieve_user_id_from_username(username)
@@ -511,11 +506,12 @@ class SqlDb(Database.SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return followed_by
 
-class MongoDb(Database.Database):
+class MongoDatabase(Database.Database):
 	conn = None
 	db = None
 	users_collection = None
-	log_collection = None
+	activities_collection = None
+	location_collection = None
 
 	def __init__(self, rootDir):
 		Database.Database.__init__(self, rootDir)
@@ -526,6 +522,7 @@ class MongoDb(Database.Database):
 			self.conn = pymongo.MongoClient('localhost:27017')
 			self.db = self.conn['straendb']
 			self.users_collection = self.db['users']
+			self.activities_collection = self.db['activities']
 			self.location_collection = self.db['locations']
 		except pymongo.errors.ConnectionFailure, e:
 			self.log_error("Could not connect to MongoDB: %s" % e)
@@ -562,10 +559,10 @@ class MongoDb(Database.Database):
 	def retrieve_user_hash(self, username):
 		if username is None:
 			self.log_error(retrieve_user_hash.__name__ + "Unexpected empty object: username")
-			return 0
+			return None
 		if len(username) == 0:
-			self.log_error(retrieve_user_hash.__name__ + "username too short")
-			return 0
+			self.log_error(retrieve_user_hash.__name__ + "username is empty")
+			return None
 
 		try:
 			users = self.users_collection.find_one({"username": username})
@@ -580,37 +577,53 @@ class MongoDb(Database.Database):
 	def retrieve_user_id_from_username(self, username):
 		if username is None:
 			self.log_error(retrieve_user_id_from_username.__name__ + "Unexpected empty object: username")
-			return 0
+			return None
 		if len(username) == 0:
-			self.log_error(retrieve_user_id_from_username.__name__ + "username too short")
-			return 0
+			self.log_error(retrieve_user_id_from_username.__name__ + "username is empty")
+			return None
 
 		try:
-			pass
+			users = self.users_collection.find_one({"username": username})
+			if len(users) > 0:
+				return str(users['_id'])
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return 0
+		return None
 
 	def retrieve_realname_from_username(self, username):
 		if username is None:
 			self.log_error(retrieve_realname_from_username.__name__ + "Unexpected empty object: username")
-			return 0
+			return None
 		if len(username) == 0:
-			self.log_error(retrieve_realname_from_username.__name__ + "username too short")
-			return 0
+			self.log_error(retrieve_realname_from_username.__name__ + "username is empty")
+			return None
 
 		try:
 			users = self.users_collection.find_one({"username": username})
 			if len(users) > 0:
 				return users[0].realname
-			return ""
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return ""
+		return None
 
 	def create_following_entry(self, username, following_name):
+		if username is None:
+			self.log_error(create_following_entry.__name__ + "Unexpected empty object: username")
+			return False
+		if len(username) == 0:
+			self.log_error(create_following_entry.__name__ + "username is empty")
+			return False
+		if following_name is None:
+			self.log_error(create_following_entry.__name__ + "Unexpected empty object: following_name")
+			return False
+		if len(following_name) == 0:
+			self.log_error(create_following_entry.__name__ + "following_name is empty")
+			return False
+
 		try:
 			pass
 		except:
@@ -635,20 +648,32 @@ class MongoDb(Database.Database):
 		return None
 
 	def retrieve_device_ids_for_username(self, username):
+		devices = []
+
+		if username is None:
+			self.log_error(retrieve_device_ids_for_username.__name__ + "Unexpected empty object: username")
+			return devices
+		if len(username) == 0:
+			self.log_error(retrieve_device_ids_for_username.__name__ + "username too short")
+			return devices
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return devices
 
 	def retrieve_most_recent_activity_id_for_device(self, device_id):
+		if device_id is None:
+			self.log_error(retrieve_most_recent_activity_id_for_device.__name__ + "Unexpected empty object: device_id")
+			return None
+
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
 	def update_device(self, device_id, user_id):
 		try:
@@ -730,7 +755,24 @@ class MongoDb(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
+	def create_activity(self, activity_id, activty_name):
+		try:
+			post = {"activity_id": activity_id, "activty_name": activty_name}
+			self.activities_collection.insert(post)
+			return True
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
+
 	def retrieve_users_following(self, username):
+		if username is None:
+			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
+			return False
+		if len(username) == 0:
+			self.log_error(retrieve_users_following.__name__ + "username is empty")
+			return False
+
 		try:
 			pass
 		except:
@@ -739,6 +781,13 @@ class MongoDb(Database.Database):
 		return False
 
 	def retrieve_users_followed_by(self, username):
+		if username is None:
+			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
+			return False
+		if len(username) == 0:
+			self.log_error(retrieve_users_followed_by.__name__ + "username is empty")
+			return False
+
 		try:
 			pass
 		except:

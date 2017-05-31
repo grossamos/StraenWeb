@@ -135,6 +135,8 @@ class StraenWeb(object):
 
 		try:
 			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
+			if deviceId is None:
+				return ""
 			activityId = int(activityIdStr)
 			if activityId == 0:
 				return ""
@@ -312,6 +314,8 @@ class StraenWeb(object):
 
 		for deviceId in deviceIds:
 			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
+			if activityId is None:
+				continue
 			locations = self.mgr.db.retrieve_locations(deviceId, activityId)
 		
 			routeCoordinates += "\t\t\tvar routeCoordinates" + str(deviceIndex) + " = \n\t\t\t[\n"
@@ -355,6 +359,9 @@ class StraenWeb(object):
 					activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
 				else:
 					activityId = int(activityIdStr)
+
+				if activityId is None:
+					return self.error()
 				result = self.render_page_for_activity(deviceStr, deviceId, activityId)
 			return result
 		except:

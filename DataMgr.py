@@ -5,7 +5,7 @@ MIN_PASSWORD_LEN  = 8
 
 class DataMgr(object):
 	def __init__(self, root_dir):
-		self.db = StraenDb.MongoDb(root_dir)
+		self.db = StraenDb.MongoDatabase(root_dir)
 		self.db.create()
 		super(DataMgr, self).__init__()
 
