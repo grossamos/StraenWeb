@@ -105,11 +105,11 @@ class SqlDb(Database.SqliteDatabase):
 			rows = self.execute(sql)
 			if rows != None and len(rows) > 0:
 				return rows[0][0]
-			return 0
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return 0
+		return None
 
 	def retrieve_user_id_from_username(self, username):
 		if username is None:
@@ -531,6 +531,25 @@ class MongoDb(Database.Database):
 			self.log_error("Could not connect to MongoDB: %s" % e)
 
 	def create_user(self, username, realname, hash):
+		if username is None:
+			self.log_error(create_user.__name__ + "Unexpected empty object: username")
+			return False
+		if realname is None:
+			self.log_error(create_user.__name__ + "Unexpected empty object: realname")
+			return False
+		if hash is None:
+			self.log_error(create_user.__name__ + "Unexpected empty object: hash")
+			return False
+		if len(username) == 0:
+			self.log_error(create_user.__name__ + "username too short")
+			return False
+		if len(realname) == 0:
+			self.log_error(create_user.__name__ + "realname too short")
+			return False
+		if len(hash) == 0:
+			self.log_error(create_user.__name__ + "hash too short")
+			return False
+
 		try:
 			post = {"username": username, "realname": realname, "hash": hash}
 			self.users_collection.insert(post)
@@ -541,61 +560,188 @@ class MongoDb(Database.Database):
 		return False
 
 	def retrieve_user_hash(self, username):
-		pass
+		if username is None:
+			self.log_error(retrieve_user_hash.__name__ + "Unexpected empty object: username")
+			return 0
+		if len(username) == 0:
+			self.log_error(retrieve_user_hash.__name__ + "username too short")
+			return 0
+
+		try:
+			users = self.users_collection.find_one({"username": username})
+			if len(users) > 0:
+				return users['hash']
+			return None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
 
 	def retrieve_user_id_from_username(self, username):
-		pass
+		if username is None:
+			self.log_error(retrieve_user_id_from_username.__name__ + "Unexpected empty object: username")
+			return 0
+		if len(username) == 0:
+			self.log_error(retrieve_user_id_from_username.__name__ + "username too short")
+			return 0
+
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return 0
 
 	def retrieve_realname_from_username(self, username):
-		pass
+		if username is None:
+			self.log_error(retrieve_realname_from_username.__name__ + "Unexpected empty object: username")
+			return 0
+		if len(username) == 0:
+			self.log_error(retrieve_realname_from_username.__name__ + "username too short")
+			return 0
+
+		try:
+			users = self.users_collection.find_one({"username": username})
+			if len(users) > 0:
+				return users[0].realname
+			return ""
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return ""
 
 	def create_following_entry(self, username, following_name):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def create_device(self, device_str, user_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
 
 	def retrieve_device_id_from_device_str(self, device_str):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
 
 	def retrieve_device_ids_for_username(self, username):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_most_recent_activity_id_for_device(self, device_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def update_device(self, device_id, user_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def clear_metadata_for_device(self, device_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def clear_metadata_for_activity(self, device_id, activity_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def create_metadata(self, device_id, activity_id, date_time, key, value):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_metadata(self, key, device_id, activity_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def create_sensordata(self, device_id, activity_id, date_time, sensor_type, value):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_sensordata(self, sensor_type, device_id, activity_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def create_location(self, device_id, activity_id, latitude, longitude, altitude):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_locations(self, device_id, activity_id):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_most_recent_locations(self, device_id, activity_id, num):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_users_following(self, username):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
 
 	def retrieve_users_followed_by(self, username):
-		pass
+		try:
+			pass
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False

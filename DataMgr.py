@@ -6,12 +6,15 @@ MIN_PASSWORD_LEN  = 8
 class DataMgr(object):
 	def __init__(self, root_dir):
 		self.db = StraenDb.MongoDb(root_dir)
+		self.db.create()
 		super(DataMgr, self).__init__()
 
 	def terminate(self):
 		self.db = None
 
 	def authenticate_user(self, email, password):
+		if self.db == None:
+			return False, "No database."
 		if len(email) == 0:
 			return False, "An email address was not provided."
 		if len(password) < MIN_PASSWORD_LEN:
@@ -26,6 +29,8 @@ class DataMgr(object):
 		return False, "The password is invalid."
 
 	def create_user(self, email, realname, password1, password2, device_str):
+		if self.db == None:
+			return False, "No database."
 		if len(email) == 0:
 			return False, "Email address not provided."
 		if len(realname) == 0:
@@ -34,7 +39,7 @@ class DataMgr(object):
 			return False, "The password is too short."
 		if password1 != password2:
 			return False, "The passwords do not match."
-		if self.db.retrieve_user_hash(email) != 0:
+		if self.db.retrieve_user_hash(email) == None:
 			return False, "The user already exists."
 
 		salt = bcrypt.gensalt()
@@ -50,12 +55,18 @@ class DataMgr(object):
 		return True, "The user was created."
 
 	def list_users_followed_by(self, email):
+		if self.db == None:
+			return False, "No database."
 		return self.db.retrieve_users_followed_by(email)
 
 	def list_users_following(self, email):
+		if self.db == None:
+			return False, "No database."
 		return self.db.retrieve_users_following(email)
 
 	def request_to_follow(self, email, following_name):
+		if self.db == None:
+			return False, "No database."
 		if len(email) == 0:
 			return False
 		if len(following_name) == 0:
