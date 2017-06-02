@@ -113,7 +113,7 @@ def parse_json_loc_obj(db, json_obj):
 				else:
 					db.create_metadata(device_id, activity_id, date_time, key, value)
 
-		# Update the user device association
+		# Update the user device association.
 		if len(user_name):
 			user_id = db.retrieve_user_id_from_username(user_name)
 			db.update_device(device_id, user_id)

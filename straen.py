@@ -143,7 +143,7 @@ class StraenWeb(object):
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
-			
+
 			names = self.mgr.db.retrieve_metadata(NAME_KEY, deviceId, activityId)
 			if names != None and len(names) > 0:
 				response += json.dumps({"name":NAME_KEY, "value":names[-1][1]})
@@ -185,7 +185,7 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
-			
+
 			powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceId, activityId)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
@@ -426,7 +426,7 @@ class StraenWeb(object):
 			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
 		return self.error()
 
-	# Renders the page for inviting someone to follow
+	# Renders the page for inviting someone to follow.
 	@cherrypy.expose
 	@require()
 	def request_to_follow(self, email, target_email, *args, **kw):
@@ -441,7 +441,7 @@ class StraenWeb(object):
 			cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
 		return self.error()
 
-	# Processes a login
+	# Processes a login.
 	@cherrypy.expose
 	def submit_login(self, *args, **kw):
 		try:
@@ -469,7 +469,7 @@ class StraenWeb(object):
 			cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
 		return self.error()
 
-	# Creates a new login
+	# Creates a new login.
 	@cherrypy.expose
 	def submit_new_login(self, email, realname, password1, password2, *args, **kw):
 		try:
