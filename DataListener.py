@@ -91,9 +91,6 @@ def parse_json_loc_obj(db, json_obj):
 		alt = json_obj["Altitude"]
 		db.create_location(device_id, activity_id, lat, lon, alt)
 
-		# Clear the old metadata.
-		#db.clear_metadata_for_activity(device_id, activity_id)
-
 		# Parse the metadata looking for the timestamp.
 		date_time = time.time()
 		try:

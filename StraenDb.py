@@ -255,34 +255,6 @@ class SqliteDatabase(Database.SqliteDatabase):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def clear_metadata_for_device(self, device_id):
-		if device_id is None:
-			self.log_error(clear_metadata_for_device.__name__ + "Unexpected empty object: device_id")
-			return
-
-		try:
-			if device_id is not None:
-				sql = "delete from metadata where deviceId = " + str(device_id)
-				self.execute(sql)
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return
-
-	def clear_metadata_for_activity(self, device_id, activity_id):
-		if device_id is None:
-			self.log_error(clear_metadata_for_activity.__name__ + "Unexpected empty object: device_id")
-			return
-	
-		try:
-			if device_id is not None:
-				sql = "delete from metadata where deviceId = " + str(device_id) + " and activityId = " + str(activity_id)
-				self.execute(sql)
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return
-
 	def create_metadata(self, device_id, activity_id, date_time, key, value):
 		if device_id is None:
 			self.log_error(create_metadata.__name__ + "Unexpected empty object: device_id")
@@ -676,22 +648,6 @@ class MongoDatabase(Database.Database):
 		return None
 
 	def update_device(self, device_id, user_id):
-		try:
-			pass
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return False
-
-	def clear_metadata_for_device(self, device_id):
-		try:
-			pass
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return False
-
-	def clear_metadata_for_activity(self, device_id, activity_id):
 		try:
 			pass
 		except:
