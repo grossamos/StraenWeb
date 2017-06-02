@@ -20,7 +20,7 @@ class DataMgr(object):
 		if len(password) < MIN_PASSWORD_LEN:
 			return False, "The password is too short."
 
-		db_hash1 = self.db.retrieve_user_hash(email)
+		user_id, db_hash1, user_name = self.db.retrieve_user(email)
 		if db_hash1 == None:
 			return False, "The user could not be found."
 		db_hash2 = bcrypt.hashpw(password.encode('utf-8'), db_hash1.encode('utf-8'))
@@ -39,7 +39,7 @@ class DataMgr(object):
 			return False, "The password is too short."
 		if password1 != password2:
 			return False, "The passwords do not match."
-		if self.db.retrieve_user_hash(email) == None:
+		if self.db.retrieve_user(email) == None:
 			return False, "The user already exists."
 
 		salt = bcrypt.gensalt()
@@ -48,7 +48,7 @@ class DataMgr(object):
 			return False, "An internal error was encountered when creating the user."
 
 		if len(device_str) > 0:
-			user_id = self.db.retrieve_user_id_from_username(email)
+			user_id, user_hash, user_realname = self.db.retrieve_user(email)
 			device_id = self.db.retrieve_device_id_from_device_str(device_str)
 			self.db.update_device(device_id, user_id)
 		

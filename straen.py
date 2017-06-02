@@ -102,12 +102,11 @@ class StraenWeb(object):
 			return ""
 		
 		try:
-			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
 			activityId = int(activityIdStr)
 			if activityId == 0:
 				return ""
 
-			locations = self.mgr.db.retrieve_most_recent_locations(deviceId, activityId, int(num))
+			locations = self.mgr.db.retrieve_most_recent_locations(deviceStr, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -134,9 +133,6 @@ class StraenWeb(object):
 			return ""
 
 		try:
-			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
-			if deviceId is None:
-				return ""
 			activityId = int(activityIdStr)
 			if activityId == 0:
 				return ""
@@ -144,11 +140,11 @@ class StraenWeb(object):
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
 
-			names = self.mgr.db.retrieve_metadata(NAME_KEY, deviceId, activityId)
+			names = self.mgr.db.retrieve_metadata(NAME_KEY, deviceStr, activityId)
 			if names != None and len(names) > 0:
 				response += json.dumps({"name":NAME_KEY, "value":names[-1][1]})
 
-			times = self.mgr.db.retrieve_metadata(TIME_KEY, deviceId, activityId)
+			times = self.mgr.db.retrieve_metadata(TIME_KEY, deviceStr, activityId)
 			if times != None and len(times) > 0:
 				if len(response) > 1:
 					response += ","
@@ -156,37 +152,37 @@ class StraenWeb(object):
 				valueStr = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				response += json.dumps({"name":TIME_KEY, "value":valueStr})
 
-			distances = self.mgr.db.retrieve_metadata(DISTANCE_KEY, deviceId, activityId)
+			distances = self.mgr.db.retrieve_metadata(DISTANCE_KEY, deviceStr, activityId)
 			if distances != None and len(distances) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":DISTANCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			avgSpeeds = self.mgr.db.retrieve_metadata(AVG_SPEED_KEY, deviceId, activityId)
+			avgSpeeds = self.mgr.db.retrieve_metadata(AVG_SPEED_KEY, deviceStr, activityId)
 			if avgSpeeds != None and len(avgSpeeds) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(avgSpeeds[-1][1])})
 
-			movingSpeeds = self.mgr.db.retrieve_metadata(MOVING_SPEED_KEY, deviceId, activityId)
+			movingSpeeds = self.mgr.db.retrieve_metadata(MOVING_SPEED_KEY, deviceStr, activityId)
 			if movingSpeeds != None and len(movingSpeeds) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(movingSpeeds[-1][1])})
 
-			heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceId, activityId)
+			heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
 			if heartRates != None and len(heartRates) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heartRates[-1][1])})
 
-			cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceId, activityId)
+			cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceId, activityId)
+			powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
 					response += ","
@@ -251,12 +247,12 @@ class StraenWeb(object):
 		return ""
 
 	# Helper function for rendering the map corresonding to a specific device and activity.
-	def render_page_for_activity(self, deviceStr, deviceId, activityId):
-		if deviceStr is None or deviceId is None:
+	def render_page_for_activity(self, deviceStr, activityId):
+		if deviceStr is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
 
-		locations = self.mgr.db.retrieve_locations(deviceId, activityId)
+		locations = self.mgr.db.retrieve_locations(deviceStr, activityId)
 		if locations is None or len(locations) == 0:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
@@ -276,22 +272,22 @@ class StraenWeb(object):
 			lastLat = locations[len(locations) - 1].latitude
 			lastLon = locations[len(locations) - 1].longitude
 
-		currentSpeeds = self.mgr.db.retrieve_metadata(CURRENT_SPEED_KEY, deviceId, activityId)
+		currentSpeeds = self.mgr.db.retrieve_metadata(CURRENT_SPEED_KEY, deviceStr, activityId)
 		currentSpeedsStr = ""
 		for value in currentSpeeds:
 			currentSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceId, activityId)
+		heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
 		heartRatesStr = ""
 		for value in heartRates:
 			heartRatesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceId, activityId)
+		cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
 		cadencesStr = ""
 		for value in cadences:
 			cadencesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceId, activityId)
+		powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
 		powersStr = ""
 		for value in powers:
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
@@ -300,8 +296,8 @@ class StraenWeb(object):
 		return my_template.render(product=g_product_name, root_url=g_root_url, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	# Helper function for rendering the map corresonding to a multiple devices.
-	def render_page_for_multiple_device_ids(self, deviceIds, userId):
-		if deviceIds is None:
+	def render_page_for_multiple_device_ids(self, deviceStrs, userId):
+		if deviceStrs is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="No device IDs were specified.")
 
@@ -312,11 +308,11 @@ class StraenWeb(object):
 		lastLon = 0
 		deviceIndex = 0
 
-		for deviceId in deviceIds:
-			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
+		for deviceStr in deviceStrs:
+			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceStr)
 			if activityId is None:
 				continue
-			locations = self.mgr.db.retrieve_locations(deviceId, activityId)
+			locations = self.mgr.db.retrieve_locations(deviceStr, activityId)
 		
 			routeCoordinates += "\t\t\tvar routeCoordinates" + str(deviceIndex) + " = \n\t\t\t[\n"
 			for location in locations:
@@ -349,20 +345,15 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def device(self, deviceStr, *args, **kw):
 		try:
-			deviceId = self.mgr.db.retrieve_device_id_from_device_str(deviceStr)
-			if deviceId is None:
-				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-				result = my_template.render(product=g_product_name, root_url=g_root_url, error="Unable to process the request. Unknown device ID.")
+			activityIdStr = cherrypy.request.params.get("activityId")
+			if activityIdStr is None:
+				activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceStr)
 			else:
-				activityIdStr = cherrypy.request.params.get("activityId")
-				if activityIdStr is None:
-					activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceId)
-				else:
-					activityId = int(activityIdStr)
+				activityId = int(activityIdStr)
 
-				if activityId is None:
-					return self.error()
-				result = self.render_page_for_activity(deviceStr, deviceId, activityId)
+			if activityId is None:
+				return self.error()
+			result = self.render_page_for_activity(deviceStr, activityId)
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
@@ -372,7 +363,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def my_activities(self, email, *args, **kw):
 		try:
-			userId = self.mgr.db.retrieve_user_id_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -381,7 +372,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def all_activities(self, email, *args, **kw):
 		try:
-			userId = self.mgr.db.retrieve_user_id_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -390,7 +381,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def following(self, email, *args, **kw):
 		try:
-			userId = self.mgr.db.retrieve_user_id_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
 		return self.error()
@@ -399,7 +390,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def followed_by(self, email, *args, **kw):
 		try:
-			userId = self.mgr.db.retrieve_user_id_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in followed_by', 'EXEC', logging.WARNING)
 		return self.error()
@@ -408,8 +399,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def device_list(self, email, *args, **kw):
 		try:
-			userId = self.mgr.db.retrieve_user_id_from_username(email)
-			realname = self.mgr.db.retrieve_realname_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
 		return self.error()
@@ -419,9 +409,9 @@ class StraenWeb(object):
 	def user(self, email, *args, **kw):
 		try:
 			user_html_file = os.path.join(g_root_dir, 'html', 'user.html')
-			realname = self.mgr.db.retrieve_realname_from_username(email)
+			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
 			my_template = Template(filename=user_html_file, module_directory=g_tempmod_dir)
-			return my_template.render(product=g_product_name, root_url=g_root_url, email=email, name=realname, error="Internal Error.")
+			return my_template.render(product=g_product_name, root_url=g_root_url, email=email, name=user_realname, error="Internal Error.")
 		except:
 			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
 		return self.error()
