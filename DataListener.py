@@ -1,3 +1,5 @@
+# Copyright 2017 Michael J Simms
+
 import argparse
 import cgi
 import datetime

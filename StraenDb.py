@@ -1,3 +1,5 @@
+# Copyright 2017 Michael J Simms
+
 import os
 import pymongo
 import sqlite3
@@ -122,14 +124,14 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def retrieve_device_ids_for_username(self, username):
+	def retrieve_device_strs_for_username(self, username):
 		devices = []
 
 		if username is None:
-			self.log_error(MongoDatabase.retrieve_device_ids_for_username.__name__ + "Unexpected empty object: username")
+			self.log_error(MongoDatabase.retrieve_device_strs_for_username.__name__ + "Unexpected empty object: username")
 			return devices
 		if len(username) == 0:
-			self.log_error(MongoDatabase.retrieve_device_ids_for_username.__name__ + "username too short")
+			self.log_error(MongoDatabase.retrieve_device_strs_for_username.__name__ + "username too short")
 			return devices
 		try:
 			pass
@@ -138,9 +140,9 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return devices
 
-	def retrieve_most_recent_activity_id_for_device(self, device_id):
-		if device_id is None:
-			self.log_error(MongoDatabase.retrieve_most_recent_activity_id_for_device.__name__ + "Unexpected empty object: device_id")
+	def retrieve_most_recent_activity_id_for_device(self, device_str):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_most_recent_activity_id_for_device.__name__ + "Unexpected empty object: device_str")
 			return None
 
 		try:
@@ -150,12 +152,12 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def update_device(self, device_id, user_id):
-		if device_id is None:
-			self.log_error(MongoDatabase.update_device.__name__ + "Unexpected empty object: device_id")
+	def create_device(self, device_str, user_id):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_device.__name__ + "Unexpected empty object: device_str")
 			return False
 		if user_id is None:
-			self.log_error(MongoDatabase.update_device.__name__ + "Unexpected empty object: user_id")
+			self.log_error(MongoDatabase.create_device.__name__ + "Unexpected empty object: user_id")
 			return False
 
 		try:
@@ -165,9 +167,9 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def create_metadata(self, device_id, activity_id, date_time, key, value):
-		if device_id is None:
-			self.log_error(MongoDatabase.create_metadata.__name__ + "Unexpected empty object: device_id")
+	def create_metadata(self, device_str, activity_id, date_time, key, value):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_metadata.__name__ + "Unexpected empty object: device_str")
 			return False
 		if activity_id is None:
 			self.log_error(MongoDatabase.create_metadata.__name__ + "Unexpected empty object: activity_id")
@@ -189,24 +191,24 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def retrieve_metadata(self, key, device_id, activity_id):
-		if device_id is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_id")
-			return False
+	def retrieve_metadata(self, key, device_str, activity_id):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
+			return None
 		if activity_id is None:
 			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
-			return False
+			return None
 
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
-	def create_sensordata(self, device_id, activity_id, date_time, sensor_type, value):
-		if device_id is None:
-			self.log_error(MongoDatabase.create_sensordata.__name__ + "Unexpected empty object: device_id")
+	def create_sensordata(self, device_str, activity_id, date_time, sensor_type, value):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_sensordata.__name__ + "Unexpected empty object: device_str")
 			return False
 		if activity_id is None:
 			self.log_error(MongoDatabase.create_sensordata.__name__ + "Unexpected empty object: activity_id")
@@ -228,27 +230,27 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def retrieve_sensordata(self, sensor_type, device_id, activity_id):
+	def retrieve_sensordata(self, sensor_type, device_str, activity_id):
 		if sensor_type is None:
 			self.log_error(MongoDatabase.retrieve_sensordata.__name__ + "Unexpected empty object: sensor_type")
-			return False
-		if device_id is None:
-			self.log_error(MongoDatabase.retrieve_sensordata.__name__ + "Unexpected empty object: device_id")
-			return False
+			return None
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_sensordata.__name__ + "Unexpected empty object: device_str")
+			return None
 		if activity_id is None:
 			self.log_error(MongoDatabase.retrieve_sensordata.__name__ + "Unexpected empty object: activity_id")
-			return False
+			return None
 
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
-	def create_location(self, device_id, activity_id, latitude, longitude, altitude):
-		if device_id is None:
-			self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: device_id")
+	def create_location(self, device_str, activity_id, latitude, longitude, altitude):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: device_str")
 			return False
 		if activity_id is None:
 			self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: activity_id")
@@ -270,42 +272,42 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def retrieve_locations(self, device_id, activity_id):
-		if device_id is None:
-			self.log_error(MongoDatabase.retrieve_locations.__name__ + "Unexpected empty object: device_id")
-			return False
+	def retrieve_locations(self, device_str, activity_id):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_locations.__name__ + "Unexpected empty object: device_str")
+			return None
 		if activity_id is None:
 			self.log_error(MongoDatabase.retrieve_locations.__name__ + "Unexpected empty object: activity_id")
-			return False
+			return None
 
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
-	def retrieve_most_recent_locations(self, device_id, activity_id, num):
-		if device_id is None:
-			self.log_error(MongoDatabase.retrieve_most_recent_locations.__name__ + "Unexpected empty object: device_id")
-			return False
+	def retrieve_most_recent_locations(self, device_str, activity_id, num):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_most_recent_locations.__name__ + "Unexpected empty object: device_str")
+			return None
 		if activity_id is None:
 			self.log_error(MongoDatabase.retrieve_most_recent_locations.__name__ + "Unexpected empty object: activity_id")
-			return False
+			return None
 		if num is None:
 			self.log_error(MongoDatabase.retrieve_most_recent_locations.__name__ + "Unexpected empty object: num")
-			return False
+			return None
 
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
-	def create_activity(self, activity_id, activty_name, device_id):
-		if device_id is None:
-			self.log_error(MongoDatabase.create_activity.__name__ + "Unexpected empty object: device_id")
+	def create_activity(self, activity_id, activty_name, device_str):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_activity.__name__ + "Unexpected empty object: device_str")
 			return False
 		if activity_id is None:
 			self.log_error(MongoDatabase.create_activity.__name__ + "Unexpected empty object: activity_id")
@@ -315,7 +317,7 @@ class MongoDatabase(Database.Database):
 			return False
 
 		try:
-			post = {"activity_id": activity_id, "activty_name": activty_name, "device_id": device_id, "locations": []}
+			post = {"activity_id": activity_id, "activty_name": activty_name, "device_str": device_str, "locations": []}
 			self.activities_collection.insert(post)
 			return True
 		except:
@@ -326,29 +328,32 @@ class MongoDatabase(Database.Database):
 	def retrieve_users_following(self, username):
 		if username is None:
 			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
-			return False
+			return None
 		if len(username) == 0:
 			self.log_error(retrieve_users_following.__name__ + "username is empty")
-			return False
+			return None
 
 		try:
-			pass
+			users = self.users_collection.find_one({"username": username})
+			if len(users) > 0:
+				return users['following']
+			return None
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None
 
 	def retrieve_users_followed_by(self, username):
 		if username is None:
 			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
-			return False
+			return None
 		if len(username) == 0:
 			self.log_error(retrieve_users_followed_by.__name__ + "username is empty")
-			return False
+			return None
 
 		try:
 			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return False
+		return None

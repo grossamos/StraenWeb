@@ -1,13 +1,15 @@
+# Copyright 2017 Michael J Simms
+
 import bcrypt
 import StraenDb
 
 MIN_PASSWORD_LEN  = 8
 
-class DataMgr(object):
+class UserMgr(object):
 	def __init__(self, root_dir):
 		self.db = StraenDb.MongoDatabase(root_dir)
 		self.db.create()
-		super(DataMgr, self).__init__()
+		super(UserMgr, self).__init__()
 
 	def terminate(self):
 		self.db = None
@@ -49,8 +51,7 @@ class DataMgr(object):
 
 		if len(device_str) > 0:
 			user_id, user_hash, user_realname = self.db.retrieve_user(email)
-			device_id = self.db.retrieve_device_id_from_device_str(device_str)
-			self.db.update_device(device_id, user_id)
+			self.db.create_device(device_str, user_id)
 		
 		return True, "The user was created."
 

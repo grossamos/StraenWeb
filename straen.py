@@ -1,3 +1,5 @@
+# Copyright 2017 Michael J Simms
+
 import cherrypy
 import datetime
 import json
@@ -8,7 +10,7 @@ import re
 import signal
 import sys
 import traceback
-import DataMgr
+import UserMgr
 
 from dateutil.tz import tzlocal
 from cherrypy import tools
@@ -296,7 +298,7 @@ class StraenWeb(object):
 		return my_template.render(product=g_product_name, root_url=g_root_url, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
 
 	# Helper function for rendering the map corresonding to a multiple devices.
-	def render_page_for_multiple_device_ids(self, deviceStrs, userId):
+	def render_page_for_multiple_devices(self, deviceStrs, userId):
 		if deviceStrs is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="No device IDs were specified.")
@@ -534,7 +536,7 @@ signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
 mako.directories = "templates"
 
-mgr = DataMgr.DataMgr(g_root_dir)
+mgr = UserMgr.UserMgr(g_root_dir)
 g_app = StraenWeb(mgr)
 
 conf = {
