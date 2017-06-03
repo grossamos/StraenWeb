@@ -88,6 +88,24 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None, None, None
 
+	def retrieve_user_activities(self, user_id):
+		if user_id is None:
+			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "Unexpected empty object: username")
+			return None
+		if len(user_id) == 0:
+			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "username is empty")
+			return None
+
+		try:
+			users = self.users_collection.find_one({"_id": user_id})
+			if len(users) > 0:
+				return str(users['activities'])
+			return None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
+
 	def create_following_entry(self, username, following_name):
 		if username is None:
 			self.log_error(MongoDatabase.create_following_entry.__name__ + "Unexpected empty object: username")
