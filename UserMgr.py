@@ -74,3 +74,10 @@ class UserMgr(object):
 			return False
 
 		return self.db.create_following_entry(email, followed_by_name)
+
+	def retrieve_user(self, email):
+		if self.db == None:
+			return False, "No database."
+		if len(email) == 0:
+			return False
+		return self.db.retrieve_user(email)

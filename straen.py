@@ -10,6 +10,8 @@ import re
 import signal
 import sys
 import traceback
+
+import DataMgr
 import UserMgr
 
 from dateutil.tz import tzlocal
@@ -84,14 +86,17 @@ class StraenWeb(object):
 		'tools.auth.on': True
 	}
 
-	def __init__(self, mgr):
-		self.mgr = mgr
+	def __init__(self, user_mgr, data_mgr):
+		self.user_mgr = user_mgr
+		self.data_mgr = data_mgr
 		super(StraenWeb, self).__init__()
 
 	def terminate(self):
 		print "Terminating"
-		self.mgr.terminate()
-		self.mgr = None
+		self.user_mgr.terminate()
+		self.user_mgr = None
+		self.data_mgr.terminate()
+		self.data_mgr = None
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
@@ -108,7 +113,7 @@ class StraenWeb(object):
 			if activityId == 0:
 				return ""
 
-			locations = self.mgr.db.retrieve_most_recent_locations(deviceStr, activityId, int(num))
+			locations = self.data_mgr.retrieve_most_recent_locations(deviceStr, activityId, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -142,11 +147,11 @@ class StraenWeb(object):
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
 
-			names = self.mgr.db.retrieve_metadata(NAME_KEY, deviceStr, activityId)
+			names = self.data_mgr.retrieve_metadata(NAME_KEY, deviceStr, activityId)
 			if names != None and len(names) > 0:
 				response += json.dumps({"name":NAME_KEY, "value":names[-1][1]})
 
-			times = self.mgr.db.retrieve_metadata(TIME_KEY, deviceStr, activityId)
+			times = self.data_mgr.retrieve_metadata(TIME_KEY, deviceStr, activityId)
 			if times != None and len(times) > 0:
 				if len(response) > 1:
 					response += ","
@@ -154,37 +159,37 @@ class StraenWeb(object):
 				valueStr = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				response += json.dumps({"name":TIME_KEY, "value":valueStr})
 
-			distances = self.mgr.db.retrieve_metadata(DISTANCE_KEY, deviceStr, activityId)
+			distances = self.data_mgr.retrieve_metadata(DISTANCE_KEY, deviceStr, activityId)
 			if distances != None and len(distances) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":DISTANCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			avgSpeeds = self.mgr.db.retrieve_metadata(AVG_SPEED_KEY, deviceStr, activityId)
+			avgSpeeds = self.data_mgr.retrieve_metadata(AVG_SPEED_KEY, deviceStr, activityId)
 			if avgSpeeds != None and len(avgSpeeds) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(avgSpeeds[-1][1])})
 
-			movingSpeeds = self.mgr.db.retrieve_metadata(MOVING_SPEED_KEY, deviceStr, activityId)
+			movingSpeeds = self.data_mgr.retrieve_metadata(MOVING_SPEED_KEY, deviceStr, activityId)
 			if movingSpeeds != None and len(movingSpeeds) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(movingSpeeds[-1][1])})
 
-			heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
+			heartRates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
 			if heartRates != None and len(heartRates) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heartRates[-1][1])})
 
-			cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
+			cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
+			powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
 					response += ","
@@ -205,7 +210,7 @@ class StraenWeb(object):
 			return ""
 		
 		try:
-			followers = self.mgr.list_users_following(email)
+			followers = self.user_mgr.list_users_following(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -230,7 +235,7 @@ class StraenWeb(object):
 			return ""
 
 		try:
-			followers = self.mgr.retrieve_users_followed_by(email)
+			followers = self.user_mgr.retrieve_users_followed_by(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -254,7 +259,7 @@ class StraenWeb(object):
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
 
-		locations = self.mgr.db.retrieve_locations(deviceStr, activityId)
+		locations = self.data_mgr.retrieve_locations(deviceStr, activityId)
 		if locations is None or len(locations) == 0:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
@@ -274,22 +279,22 @@ class StraenWeb(object):
 			lastLat = locations[len(locations) - 1].latitude
 			lastLon = locations[len(locations) - 1].longitude
 
-		currentSpeeds = self.mgr.db.retrieve_metadata(CURRENT_SPEED_KEY, deviceStr, activityId)
+		currentSpeeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, deviceStr, activityId)
 		currentSpeedsStr = ""
 		for value in currentSpeeds:
 			currentSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		heartRates = self.mgr.db.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
+		heartRates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
 		heartRatesStr = ""
 		for value in heartRates:
 			heartRatesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		cadences = self.mgr.db.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
+		cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
 		cadencesStr = ""
 		for value in cadences:
 			cadencesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		powers = self.mgr.db.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
+		powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
 		powersStr = ""
 		for value in powers:
 			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
@@ -311,10 +316,10 @@ class StraenWeb(object):
 		deviceIndex = 0
 
 		for deviceStr in deviceStrs:
-			activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceStr)
+			activityId = self.data_mgr.retrieve_most_recent_activity_id_for_device(deviceStr)
 			if activityId is None:
 				continue
-			locations = self.mgr.db.retrieve_locations(deviceStr, activityId)
+			locations = self.data_mgr.retrieve_locations(deviceStr, activityId)
 		
 			routeCoordinates += "\t\t\tvar routeCoordinates" + str(deviceIndex) + " = \n\t\t\t[\n"
 			for location in locations:
@@ -349,7 +354,7 @@ class StraenWeb(object):
 		try:
 			activityIdStr = cherrypy.request.params.get("activityId")
 			if activityIdStr is None:
-				activityId = self.mgr.db.retrieve_most_recent_activity_id_for_device(deviceStr)
+				activityId = self.data_mgr.retrieve_most_recent_activity_id_for_device(deviceStr)
 			else:
 				activityId = int(activityIdStr)
 
@@ -365,7 +370,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def my_activities(self, email, *args, **kw):
 		try:
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -374,7 +379,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def all_activities(self, email, *args, **kw):
 		try:
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -383,7 +388,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def following(self, email, *args, **kw):
 		try:
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
 		return self.error()
@@ -392,7 +397,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def followed_by(self, email, *args, **kw):
 		try:
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in followed_by', 'EXEC', logging.WARNING)
 		return self.error()
@@ -401,7 +406,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def device_list(self, email, *args, **kw):
 		try:
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 		except:
 			cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
 		return self.error()
@@ -411,7 +416,7 @@ class StraenWeb(object):
 	def user(self, email, *args, **kw):
 		try:
 			user_html_file = os.path.join(g_root_dir, 'html', 'user.html')
-			user_id, user_hash, user_realname = self.mgr.db.retrieve_user(email)
+			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			my_template = Template(filename=user_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, email=email, name=user_realname, error="Internal Error.")
 		except:
@@ -423,7 +428,7 @@ class StraenWeb(object):
 	@require()
 	def request_to_follow(self, email, target_email, *args, **kw):
 		try:
-			if self.mgr.request_to_follow(email, target_email):
+			if self.user_mgr.request_to_follow(email, target_email):
 				result = ""
 			else:
 				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
@@ -444,7 +449,7 @@ class StraenWeb(object):
 				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
 				result = my_template.render(product=g_product_name, root_url=g_root_url, error="An email address and password were not provided.")
 			else:
-				user_logged_in, info_str = self.mgr.authenticate_user(email, password)
+				user_logged_in, info_str = self.user_mgr.authenticate_user(email, password)
 				if user_logged_in:
 					cherrypy.session.regenerate()
 					cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
@@ -465,7 +470,7 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def submit_new_login(self, email, realname, password1, password2, *args, **kw):
 		try:
-			user_created, info_str = self.mgr.create_user(email, realname, password1, password2, "")
+			user_created, info_str = self.user_mgr.create_user(email, realname, password1, password2, "")
 			if user_created:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
@@ -536,8 +541,9 @@ signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
 mako.directories = "templates"
 
-mgr = UserMgr.UserMgr(g_root_dir)
-g_app = StraenWeb(mgr)
+user_mgr = UserMgr.UserMgr(g_root_dir)
+data_mgr = DataMgr.DataMgr(g_root_dir)
+g_app = StraenWeb(user_mgr, data_mgr)
 
 conf = {
 	'/':
