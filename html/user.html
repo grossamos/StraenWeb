@@ -5,6 +5,7 @@
 
 <title>${product} - ${name}</title>
 
+<link rel="stylesheet" href="${root_url}/css/normalize.css">
 <link rel="stylesheet" href="${root_url}/css/site.css">
 
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
@@ -20,15 +21,7 @@
 	<h1>${name}</h1>
 </header>
 
-<nav>
-	<ul>
-		<li><a href="${root_url}/my_activities/${email}">My Activities</a></li>
-		<li><a href="${root_url}/all_activities/${email}">All Activities</a></li>
-		<li><a href="${root_url}/following/${email}">Followers</a></li>
-		<li><a href="${root_url}/followed_by/${email}">Following</a></li>
-		<li><a href="${root_url}/device_list/${email}">Devices</a></li>
-	</ul>
-</nav>
+${nav}
 
 </body>
 </html>
