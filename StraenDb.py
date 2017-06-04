@@ -92,10 +92,10 @@ class MongoDatabase(Database.Database):
 
 	def retrieve_user_activities(self, user_id):
 		if user_id is None:
-			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "Unexpected empty object: username")
+			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "Unexpected empty object: user_id")
 			return None
 		if len(user_id) == 0:
-			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "username is empty")
+			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "user_id is empty")
 			return None
 
 		try:
@@ -111,12 +111,31 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def retrieve_users_following(self, username):
-		if username is None:
-			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
+	def retrieve_user_devices(self, user_id):
+		if user_id is None:
+			self.log_error(MongoDatabase.retrieve_user_devices.__name__ + "Unexpected empty object: user_id")
 			return None
-		if len(username) == 0:
-			self.log_error(retrieve_users_following.__name__ + "username is empty")
+		if len(user_id) == 0:
+			self.log_error(MongoDatabase.retrieve_user_devices.__name__ + "username is user_id")
+			return None
+
+		try:
+			user_id_obj = ObjectId(user_id)
+			users = self.users_collection.find_one({"_id": user_id_obj})
+			if users is None:
+				return None
+			return users['devices']
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
+
+	def retrieve_users_following(self, user_id):
+		if user_id is None:
+			self.log_error(MongoDatabase.retrieve_users_following.__name__ + "Unexpected empty object: user_id")
+			return None
+		if len(user_id) == 0:
+			self.log_error(MongoDatabase.retrieve_users_following.__name__ + "user_id is empty")
 			return None
 
 		try:
@@ -130,12 +149,12 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def retrieve_users_followed_by(self, username):
-		if username is None:
-			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
+	def retrieve_users_followed_by(self, user_id):
+		if user_id is None:
+			self.log_error(MongoDatabase.retrieve_users_followed_by.__name__ + "Unexpected empty object: user_id")
 			return None
-		if len(username) == 0:
-			self.log_error(retrieve_users_followed_by.__name__ + "username is empty")
+		if len(user_id) == 0:
+			self.log_error(MongoDatabase.retrieve_users_followed_by.__name__ + "username is user_id")
 			return None
 
 		try:

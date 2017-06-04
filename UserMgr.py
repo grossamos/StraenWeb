@@ -55,19 +55,26 @@ class UserMgr(object):
 		
 		return True, "The user was created."
 
-	def list_users_followed_by(self, email):
+	def list_user_devices(self, user_id):
 		if self.db == None:
 			return False, "No database."
-		if email is None or len(email) == 0:
+		if user_id is None or len(user_id) == 0:
 			return False, "Bad parameter."
-		return self.db.retrieve_users_followed_by(email)
+		return self.db.retrieve_user_devices(user_id)
 
-	def list_users_following(self, email):
+	def list_users_followed_by(self, user_id):
 		if self.db == None:
 			return False, "No database."
-		if email is None or len(email) == 0:
+		if user_id is None or len(user_id) == 0:
 			return False, "Bad parameter."
-		return self.db.retrieve_users_following(email)
+		return self.db.retrieve_users_followed_by(user_id)
+
+	def list_users_following(self, user_id):
+		if self.db == None:
+			return False, "No database."
+		if user_id is None or len(user_id) == 0:
+			return False, "Bad parameter."
+		return self.db.retrieve_users_following(user_id)
 
 	def request_to_follow(self, email, following_name):
 		if self.db == None:

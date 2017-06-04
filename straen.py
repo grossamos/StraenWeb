@@ -386,8 +386,9 @@ class StraenWeb(object):
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id)
 			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
+			activities_list_str = ""
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
+			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
 		except:
 			cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -399,9 +400,10 @@ class StraenWeb(object):
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id)
 			users_following = self.user_mgr.list_users_following(user_id)
+			activities_list_str = ""
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
+			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
 		except:
 			cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
 		return self.error()
@@ -411,9 +413,14 @@ class StraenWeb(object):
 	def following(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+			users_following = self.user_mgr.list_users_following(user_id)
+			users_list_str = ""
+			if users_following is not None and isinstance(users_following, list):
+				for user in users_following:
+					pass
 			html_file = os.path.join(g_root_dir, 'html', 'following.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
+			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
 		except:
 			cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
 		return self.error()
@@ -423,9 +430,14 @@ class StraenWeb(object):
 	def followers(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+			users_followed_by = self.user_mgr.list_users_followed_by(user_id)
+			users_list_str = ""
+			if users_followed_by is not None and isinstance(users_followed_by, list):
+				for user in users_followed_by:
+					pass
 			html_file = os.path.join(g_root_dir, 'html', 'followers.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
+			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
 		except:
 			cherrypy.log.error('Unhandled exception in followed_by', 'EXEC', logging.WARNING)
 		return self.error()
@@ -435,9 +447,14 @@ class StraenWeb(object):
 	def device_list(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+			devices = self.user_mgr.list_user_devices(user_id)
+			device_list_str = ""
+			if devices is not None and isinstance(devices, list):
+				for device in devices:
+					pass
 			html_file = os.path.join(g_root_dir, 'html', 'device_list.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
+			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
 		except:
 			cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
 		return self.error()
