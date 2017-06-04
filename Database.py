@@ -7,8 +7,7 @@ class Database(object):
 	db_file = ""
 	
 	def __init__(self, root_dir):
-		self.db_file = os.path.join(root_dir, 'exert.sqlite')
-		self.log_file_name = os.path.join(root_dir, 'ExertDb.log')
+		self.log_file_name = os.path.join(root_dir, 'database.log')
 		super(Database, self).__init__()
 	
 	def log_error(self, log_str):
@@ -32,6 +31,7 @@ class Database(object):
 
 class MysqlDatabase(Database):
 	def __init__(self, rootDir):
+		self.db_file = os.path.join(root_dir, 'exert.sqlite')
 		Database.__init__(self, rootDir)
 	
 	def connect(self):
