@@ -21,11 +21,26 @@
 	<h1>${name} - Following</h1>
 </header>
 
+<section>
 ${nav}
+</section>
 
-<table>
-${users_list}
-</table>
+<section class="user_search_form" style="width: 600px">
+	<form name="user_search" action="${root_url}/submit_user_search" method="post" accept-charset="utf-8">
+		<ul>
+			<li>
+				<label for="username" style="width: 440px">User Email or Name</label>
+				<input type="search" name="email" style="width: 440px" placeholder="theirname@email.com" required>
+			</li>
+		</ul>
+	</form>
+</section>
+
+<section class="users_list" style="width: 600px">
+	<table>
+	${users_list}
+	</table>
+</section>
 
 </body>
 </html>

@@ -15,11 +15,12 @@ h2 {
 header {
 	text-align: center;
 	background: #777713;
-	background-image: url("../images/main_background5.png");
+	background-image: url("../images/main_background4.png");
 	background-size: cover;
 }
 
 nav {
+	clear: left;
 	font-size: 150%;
 	text-align: center;
 }
@@ -107,4 +108,21 @@ td {
 
 tr:hover {
 	opacity: 1.0;
+}
+
+.user_search_form {
+	width: 200px;
+	margin: 50px auto;
+	padding: 25px;
+}
+
+.user_search_form ul {
+	padding: 0;
+	margin: 0;
+}
+
+.user_search_form li {
+	display: inline;
+	float: left;
+	padding-bottom: .25cm;
 }

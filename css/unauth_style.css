@@ -12,7 +12,8 @@ a:visited {color: #006600}
 a:hover {color: #FFCC00}
 a:active {color: #FF00CC}
 
-p {	color: black;
+p {
+	color: black;
 	font-family: "Times New Roman";
 }
 
