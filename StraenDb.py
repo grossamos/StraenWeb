@@ -1,5 +1,7 @@
 # Copyright 2017 Michael J Simms
 
+from bson.objectid import ObjectId
+
 import os
 import pymongo
 import sqlite3
@@ -97,10 +99,47 @@ class MongoDatabase(Database.Database):
 			return None
 
 		try:
-			users = self.users_collection.find_one({"_id": user_id})
-			if len(users) > 0:
-				return str(users['activities'])
+			user_id_obj = ObjectId(user_id)
+			users = self.users_collection.find_one({"_id": user_id_obj})
+			if users is None:
+				return None
+			return users['activities']
+		except KeyError:
 			return None
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
+
+	def retrieve_users_following(self, username):
+		if username is None:
+			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
+			return None
+		if len(username) == 0:
+			self.log_error(retrieve_users_following.__name__ + "username is empty")
+			return None
+
+		try:
+			user_id_obj = ObjectId(user_id)
+			users = self.users_collection.find_one({"_id": user_id_obj})
+			if users is None:
+				return None
+			return users['following']
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
+
+	def retrieve_users_followed_by(self, username):
+		if username is None:
+			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
+			return None
+		if len(username) == 0:
+			self.log_error(retrieve_users_followed_by.__name__ + "username is empty")
+			return None
+
+		try:
+			pass
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
@@ -342,36 +381,3 @@ class MongoDatabase(Database.Database):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return False
-
-	def retrieve_users_following(self, username):
-		if username is None:
-			self.log_error(retrieve_users_following.__name__ + "Unexpected empty object: username")
-			return None
-		if len(username) == 0:
-			self.log_error(retrieve_users_following.__name__ + "username is empty")
-			return None
-
-		try:
-			users = self.users_collection.find_one({"username": username})
-			if len(users) > 0:
-				return users['following']
-			return None
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return None
-
-	def retrieve_users_followed_by(self, username):
-		if username is None:
-			self.log_error(retrieve_users_followed_by.__name__ + "Unexpected empty object: username")
-			return None
-		if len(username) == 0:
-			self.log_error(retrieve_users_followed_by.__name__ + "username is empty")
-			return None
-
-		try:
-			pass
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return None

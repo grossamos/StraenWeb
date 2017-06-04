@@ -384,7 +384,7 @@ class StraenWeb(object):
 	def my_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			activities = self.data_mgr.retrieve_activities(user_id)
+			activities = self.data_mgr.retrieve_user_activities(user_id)
 			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
@@ -397,6 +397,8 @@ class StraenWeb(object):
 	def all_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+			activities = self.data_mgr.retrieve_user_activities(user_id)
+			users_following = self.user_mgr.list_users_following(user_id)
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
