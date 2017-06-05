@@ -3,8 +3,8 @@ h1 {
 	text-transform: uppercase;
 	text-align: center;
 	font-size: 250%;
-	padding: 40px;
-	margin: 10px;
+	padding: 20px;
+	margin: 0px;
 }
 
 h2 {
@@ -19,23 +19,22 @@ header {
 	background-size: cover;
 }
 
-nav {
-	clear: left;
+.nav nav {
 	font-size: 150%;
 	text-align: center;
 }
 
-nav a, nav a:visited {
+.nav nav a, nav a:visited {
 	float: left;
 	display: inline-block;
 	color: #000000;
 	text-decoration: none;
 	background: #FFFFFF;
-	margin: 20px 40px 40px 20px;
+	margin: 0px 20px 20px 20px;
 	width: 200px;
 	height: 60px;
 	border-radius: 10px;
-	opacity: 0.25;
+	opacity: 0.75;
 	line-height: 2em;
 }
 
