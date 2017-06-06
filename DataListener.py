@@ -26,10 +26,6 @@ CADENCE_KEY    = "Cadence"
 HEART_RATE_KEY = "Heart Rate"
 POWER_KEY      = "Power"
 
-CADENCE_DB_KEY    = 1
-HEART_RATE_DB_KEY = 2
-POWER_DB_KEY      = 3
-
 def signal_handler(signal, frame):
 	log_info("Exiting...")
 	if g_listener is not None:
@@ -106,12 +102,8 @@ def parse_json_loc_obj(db, json_obj):
 			key = item[0]
 			value = item[1]
 			if not key in g_not_meta_data:
-				if key == CADENCE_KEY:
-					db.create_sensordata(device_id, activity_id, date_time, CADENCE_DB_KEY, value)
-				elif key == HEART_RATE_KEY:
-					db.create_sensordata(device_id, activity_id, date_time, HEART_RATE_DB_KEY, value)
-				elif key == POWER_KEY:
-					db.create_sensordata(device_id, activity_id, date_time, POWER_DB_KEY, value)
+				if key is in [ CADENCE_KEY, HEART_RATE_KEY, POWER_KEY ]:
+					db.create_sensordata(device_id, activity_id, date_time, key, value)
 				else:
 					db.create_metadata(device_id, activity_id, date_time, key, value)
 
