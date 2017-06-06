@@ -14,7 +14,7 @@ import time
 import traceback
 import SocketServer
 import BaseHTTPServer
-import ExertDb
+import StraenDb
 
 g_debug = False
 g_data_log = False
@@ -87,12 +87,6 @@ def parse_json_loc_obj(db, json_obj):
 		except:
 			pass
 
-		# Parse the location data.
-		lat = json_obj["Latitude"]
-		lon = json_obj["Longitude"]
-		alt = json_obj["Altitude"]
-		db.create_location(device_id, activity_id, lat, lon, alt)
-
 		# Parse the metadata looking for the timestamp.
 		date_time = time.time()
 		try:
@@ -101,6 +95,12 @@ def parse_json_loc_obj(db, json_obj):
 		except:
 			pass
 		
+		# Parse the location data.
+		lat = json_obj["Latitude"]
+		lon = json_obj["Longitude"]
+		alt = json_obj["Altitude"]
+		db.create_location(device_id, activity_id, lat, lon, alt)
+
 		# Parse the rest of the data, which will be a combination of metadata and sensor data.
 		for item in json_obj.iteritems():
 			key = item[0]
@@ -136,7 +136,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if ctype == 'multipart/form-data':
 				post_vars = cgi.parse_multipart(self.rfile, pdict)
 			elif ctype == 'application/x-www-form-urlencoded':
-				db = ExertDb.ExertDb(g_root_dir)
+				db = StraenDb.MongoDatabase(g_root_dir)
 				length = int(self.headers.getheader('content-length'))
 				post_vars = cgi.parse_qs(self.rfile.read(length), keep_blank_values = 1)
 				locations_str = post_vars.keys()[0]
@@ -194,7 +194,7 @@ class UdpDataListener(object):
 		log_info("Starting the app listener")
 
 		try:
-			db = ExertDb.ExertDb(g_root_dir)
+			db = StraenDb.MongoDatabase(g_root_dir)
 
 			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			sock.bind(("", self.port))
@@ -220,7 +220,7 @@ def Start(protocol, port):
 	global g_root_dir
 
 	log_info("Creating the database in " + g_root_dir)
-	db = ExertDb.ExertDb(g_root_dir)
+	db = StraenDb.MongoDatabase(g_root_dir)
 	db.create()
 
 	if protocol == "rest":
