@@ -459,18 +459,6 @@ class StraenWeb(object):
 			cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
 		return self.error()
 
-	# Renders the dashboard page for an individual user.
-	@cherrypy.expose
-	def user(self, email, *args, **kw):
-		try:
-			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			html_file = os.path.join(g_root_dir, 'html', 'user.html')
-			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname)
-		except:
-			cherrypy.log.error('Unhandled exception in user', 'EXEC', logging.WARNING)
-		return self.error()
-
 	# Renders the page for inviting someone to follow.
 	@cherrypy.expose
 	@require()
@@ -501,7 +489,7 @@ class StraenWeb(object):
 				if user_logged_in:
 					cherrypy.session.regenerate()
 					cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-					result = self.user(email, None, None)
+					result = self.all_activities(email, None, None)
 				else:
 					my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
 					error_msg = "Unable to authenticate the user."
@@ -522,7 +510,7 @@ class StraenWeb(object):
 			if user_created:
 				cherrypy.session.regenerate()
 				cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
-				result = self.user(email, *args, **kw)
+				result = self.all_activities(email, *args, **kw)
 			else:
 				my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
 				error_msg = "Unable to create the user."
