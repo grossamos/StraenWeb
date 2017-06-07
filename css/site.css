@@ -15,9 +15,9 @@ h2 {
 header {
 	text-align: center;
 	background: #777713;
-	background-image: url("../images/main_background4.png");
+	background-position: 0px 300px;
+	background-image: url("../images/main_background5.png");
 	background-size: cover;
-	background-position: bottom 100px;
 }
 
 .nav ul {
