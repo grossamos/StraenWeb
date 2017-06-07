@@ -17,36 +17,38 @@ header {
 	background: #777713;
 	background-image: url("../images/main_background4.png");
 	background-size: cover;
+	background-position: bottom 100px;
 }
 
-.nav nav {
-	font-size: 150%;
-	text-align: center;
+.nav ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: #333;
 }
 
-.nav nav a, nav a:visited {
+.nav li {
 	float: left;
-	display: inline-block;
-	color: #000000;
-	text-decoration: none;
-	background: #FFFFFF;
-	margin: 0px 20px 20px 20px;
-	width: 200px;
-	height: 60px;
-	border-radius: 10px;
-	opacity: 0.75;
-	line-height: 2em;
 }
 
-li a {
-	color: #000000;
+.nav li a {
+	display: inline-block;
+	color: white;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+}
+
+.nav li a:hover {
+	background-color: #111;
 }
 
 section {
 	color: #000000;
 	background: #FFFFFF;
 	vertical-align: top;
-	margin: 10px;
+	margin: 0px;
 }
 
 .active {
