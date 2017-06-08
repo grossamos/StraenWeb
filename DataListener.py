@@ -74,7 +74,6 @@ def parse_json_loc_obj(db, json_obj):
 		# Parse required identifiers.
 		device_str = json_obj["DeviceId"]
 		activity_id = json_obj["ActivityId"]
-		device_id = db.retrieve_device_id_from_device_str(device_str)
 
 		# Parse optional identifiers.
 		user_name = ""
@@ -95,22 +94,22 @@ def parse_json_loc_obj(db, json_obj):
 		lat = json_obj["Latitude"]
 		lon = json_obj["Longitude"]
 		alt = json_obj["Altitude"]
-		db.create_location(device_id, activity_id, lat, lon, alt)
+		db.create_location(device_str, activity_id, lat, lon, alt)
 
 		# Parse the rest of the data, which will be a combination of metadata and sensor data.
 		for item in json_obj.iteritems():
 			key = item[0]
 			value = item[1]
 			if not key in g_not_meta_data:
-				if key is in [ CADENCE_KEY, HEART_RATE_KEY, POWER_KEY ]:
-					db.create_sensordata(device_id, activity_id, date_time, key, value)
+				if key in [ CADENCE_KEY, HEART_RATE_KEY, POWER_KEY ]:
+					db.create_sensordata(device_str, activity_id, date_time, key, value)
 				else:
-					db.create_metadata(device_id, activity_id, date_time, key, value)
+					db.create_metadata(device_str, activity_id, date_time, key, value)
 
 		# Update the user device association.
 		if len(user_name):
 			user_id = db.retrieve_user_id_from_username(user_name)
-			db.update_device(device_id, user_id)
+			db.update_device(device_str, user_id)
 	except ValueError, e:
 		log_info("ValueError in JSON data - reason " + str(e) + ". JSON str = " + str(json_str))
 	except KeyError, e:

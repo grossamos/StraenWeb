@@ -131,7 +131,7 @@ class MongoDatabase(Database.Database):
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				return users['following']
+				return user['following']
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
