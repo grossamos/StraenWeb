@@ -94,7 +94,7 @@ def parse_json_loc_obj(db, json_obj):
 		lat = json_obj["Latitude"]
 		lon = json_obj["Longitude"]
 		alt = json_obj["Altitude"]
-		db.create_location(device_str, activity_id, lat, lon, alt)
+		db.create_location(device_str, activity_id, date_time, lat, lon, alt)
 
 		# Parse the rest of the data, which will be a combination of metadata and sensor data.
 		for item in json_obj.iteritems():

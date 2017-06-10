@@ -324,7 +324,7 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def create_location(self, device_str, activity_id, latitude, longitude, altitude):
+	def create_location(self, device_str, activity_id, date_time, latitude, longitude, altitude):
 		if device_str is None:
 			self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: device_str")
 			return False
@@ -346,8 +346,14 @@ class MongoDatabase(Database.Database):
 			if activity is None:
 				if self.create_activity(activity_id, "", device_str):
 					activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
-			if activity is None:
-				pass
+			if activity is not None:
+				list = activity['locations']
+				if list is None:
+					list = []
+				value = {"time": date_time, "latitude": latitude, "longitude": longitude, "altitude": altitude}
+				list.append(value)
+				activity['locations'] = list
+				self.activities_collection.save(activity)
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
