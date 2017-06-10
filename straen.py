@@ -100,20 +100,20 @@ class StraenWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def update_track(self, deviceStr=None, activityIdStr=None, num=None, *args, **kw):
-		if deviceStr is None:
+	def update_track(self, device_str=None, activity_id_str=None, num=None, *args, **kw):
+		if device_str is None:
 			return ""
-		if activityIdStr is None:
+		if activity_id_str is None:
 			return ""
 		if num is None:
 			return ""
 		
 		try:
-			activityId = int(activityIdStr)
-			if activityId == 0:
+			activity_id = int(activity_id_str)
+			if activity_id == 0:
 				return ""
 
-			locations = self.data_mgr.retrieve_most_recent_locations(deviceStr, activityId, int(num))
+			locations = self.data_mgr.retrieve_most_recent_locations(device_str, activity_id, int(num))
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -133,25 +133,25 @@ class StraenWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def update_metadata(self, deviceStr=None, activityIdStr=None, *args, **kw):
-		if deviceStr is None:
+	def update_metadata(self, device_str=None, activity_id_str=None, *args, **kw):
+		if device_str is None:
 			return ""
-		if activityIdStr is None:
+		if activity_id_str is None:
 			return ""
 
 		try:
-			activityId = int(activityIdStr)
-			if activityId == 0:
+			activity_id = int(activity_id_str)
+			if activity_id == 0:
 				return ""
 
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
 
-			names = self.data_mgr.retrieve_metadata(NAME_KEY, deviceStr, activityId)
+			names = self.data_mgr.retrieve_metadata(NAME_KEY, device_str, activity_id)
 			if names != None and len(names) > 0:
 				response += json.dumps({"name":NAME_KEY, "value":names[-1][1]})
 
-			times = self.data_mgr.retrieve_metadata(TIME_KEY, deviceStr, activityId)
+			times = self.data_mgr.retrieve_metadata(TIME_KEY, device_str, activity_id)
 			if times != None and len(times) > 0:
 				if len(response) > 1:
 					response += ","
@@ -159,37 +159,37 @@ class StraenWeb(object):
 				valueStr = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
 				response += json.dumps({"name":TIME_KEY, "value":valueStr})
 
-			distances = self.data_mgr.retrieve_metadata(DISTANCE_KEY, deviceStr, activityId)
+			distances = self.data_mgr.retrieve_metadata(DISTANCE_KEY, device_str, activity_id)
 			if distances != None and len(distances) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":DISTANCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			avgSpeeds = self.data_mgr.retrieve_metadata(AVG_SPEED_KEY, deviceStr, activityId)
-			if avgSpeeds != None and len(avgSpeeds) > 0:
+			avg_speeds = self.data_mgr.retrieve_metadata(AVG_SPEED_KEY, device_str, activity_id)
+			if avg_speeds != None and len(avg_speeds) > 0:
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(avgSpeeds[-1][1])})
+				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(avg_speeds[-1][1])})
 
-			movingSpeeds = self.data_mgr.retrieve_metadata(MOVING_SPEED_KEY, deviceStr, activityId)
-			if movingSpeeds != None and len(movingSpeeds) > 0:
+			moving_speeds = self.data_mgr.retrieve_metadata(MOVING_SPEED_KEY, device_str, activity_id)
+			if moving_speeds != None and len(moving_speeds) > 0:
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(movingSpeeds[-1][1])})
+				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(moving_speeds[-1][1])})
 
-			heartRates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
-			if heartRates != None and len(heartRates) > 0:
+			heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, device_str, activity_id)
+			if heart_rates != None and len(heart_rates) > 0:
 				if len(response) > 1:
 					response += ","
-				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heartRates[-1][1])})
+				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heart_rates[-1][1])})
 
-			cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
+			cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, device_str, activity_id)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
+			powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, device_str, activity_id)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
 					response += ","
@@ -267,87 +267,97 @@ class StraenWeb(object):
 		return str
 
 	# Helper function for rendering the map corresonding to a specific device and activity.
-	def render_page_for_activity(self, deviceStr, activityId):
-		if deviceStr is None:
+	def render_page_for_activity(self, device_str, activity_id):
+		if device_str is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
 
-		locations = self.data_mgr.retrieve_locations(deviceStr, activityId)
+		locations = self.data_mgr.retrieve_locations(device_str, activity_id)
 		if locations is None or len(locations) == 0:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
 
 		route = ""
-		centerLat = 0
-		centerLon = 0
-		lastLat = 0
-		lastLon = 0
+		center_lat = 0
+		center_lon = 0
+		last_lat = 0
+		last_lon = 0
 
 		for location in locations:
-			route += "\t\t\t\tnewCoord(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
+			route += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location['longitude']) + "),\n"
+			lastLoc = location
 
 		if len(locations) > 0:
-			centerLat = locations[0].latitude
-			centerLon = locations[0].longitude
-			lastLat = locations[len(locations) - 1].latitude
-			lastLon = locations[len(locations) - 1].longitude
+			first_loc = locations[0]
+			center_lat = first_loc['latitude']
+			center_lon = first_loc['longitude']
+			last_lat = lastLoc['latitude']
+			last_lon = lastLoc['longitude']
 
-		currentSpeeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, deviceStr, activityId)
-		currentSpeedsStr = ""
-		for value in currentSpeeds:
-			currentSpeedsStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+		current_speeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, device_str, activity_id)
+		current_speeds_str = ""
+		if current_speeds is not None and isinstance(current_speeds, list):
+			for value in current_speeds:
+				current_speeds_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		heartRates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, deviceStr, activityId)
-		heartRatesStr = ""
-		for value in heartRates:
-			heartRatesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+		heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, device_str, activity_id)
+		heart_rates_str = ""
+		if heart_rates is not None and isinstance(heart_rates, list):
+			for value in heart_rates:
+				heart_rates_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, deviceStr, activityId)
-		cadencesStr = ""
-		for value in cadences:
-			cadencesStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+		cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, device_str, activity_id)
+		cadences_str = ""
+		if cadences is not None and isinstance(cadences, list):
+			for value in cadences:
+				cadences_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
-		powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, deviceStr, activityId)
-		powersStr = ""
-		for value in powers:
-			powersStr += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+		powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, device_str, activity_id)
+		powers_str = ""
+		if powers is not None and isinstance(powers, list):
+			for value in powers:
+				powers_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(product=g_product_name, root_url=g_root_url, deviceStr=deviceStr, centerLat=centerLat, lastLat=lastLat, lastLon=lastLon, centerLon=centerLon, route=route, routeLen=len(locations), activityId=str(activityId), current_speeds=currentSpeedsStr, heart_rates=heartRatesStr, powers=powersStr)
+		return my_template.render(product=g_product_name, root_url=g_root_url, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
 
 	# Helper function for rendering the map corresonding to a multiple devices.
-	def render_page_for_multiple_devices(self, deviceStrs, userId):
-		if deviceStrs is None:
+	def render_page_for_multiple_devices(self, device_strs, user_id):
+		if device_strs is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="No device IDs were specified.")
 
-		routeCoordinates = ""
-		centerLat = 0
-		centerLon = 0
-		lastLat = 0
-		lastLon = 0
-		deviceIndex = 0
+		route_coordinates = ""
+		center_lat = 0
+		center_lon = 0
+		last_lat = 0
+		last_lon = 0
+		device_index = 0
 
-		for deviceStr in deviceStrs:
-			activityId = self.data_mgr.retrieve_most_recent_activity_id_for_device(deviceStr)
-			if activityId is None:
+		for device_str in device_strs:
+			activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
+			if activity_id is None:
 				continue
-			locations = self.data_mgr.retrieve_locations(deviceStr, activityId)
+			locations = self.data_mgr.retrieve_locations(device_str, activity_id)
+			if locations is None:
+				continue
 		
-			routeCoordinates += "\t\t\tvar routeCoordinates" + str(deviceIndex) + " = \n\t\t\t[\n"
+			route_coordinates += "\t\t\tvar routeCoordinates" + str(device_index) + " = \n\t\t\t[\n"
 			for location in locations:
-				routeCoordinates += "\t\t\t\tnewCoord(" + str(location.latitude) + ", " + str(location.longitude) + "),\n"
-			routeCoordinates += "\t\t\t];\n"
-			routeCoordinates += "\t\t\taddRoute(routeCoordinates" + str(deviceIndex) + ");\n\n"
+				route_coordinates += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location[']longitude']) + "),\n"
+				lastLoc = location
+			route_coordinates += "\t\t\t];\n"
+			route_coordinates += "\t\t\taddRoute(routeCoordinates" + str(device_index) + ");\n\n"
 
 			if len(locations) > 0:
-				centerLat = locations[0].latitude
-				centerLon = locations[0].longitude
-				lastLat = locations[len(locations) - 1].latitude
-				lastLon = locations[len(locations) - 1].longitude
+				first_loc = locations[0]
+				center_lat = first_loc['latitude']
+				center_lon = first_loc['longitude']
+				last_lat = lastLoc['latitude']
+				last_lon = lastLoc['longitude']
 		
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(product=g_product_name, root_url=g_root_url, centerLat=centerLat, centerLon=centerLon, lastLat=lastLat, lastLon=lastLon, routeCoordinates=routeCoordinates, routeLen=len(locations), userId=str(userId))
+		return my_template.render(product=g_product_name, root_url=g_root_url, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 
 	# Renders the errorpage.
 	@cherrypy.expose
@@ -363,17 +373,17 @@ class StraenWeb(object):
 
 	# Renders the map page for a single device.
 	@cherrypy.expose
-	def device(self, deviceStr, *args, **kw):
+	def device(self, device_str, *args, **kw):
 		try:
-			activityIdStr = cherrypy.request.params.get("activityId")
-			if activityIdStr is None:
-				activityId = self.data_mgr.retrieve_most_recent_activity_id_for_device(deviceStr)
+			activity_id_str = cherrypy.request.params.get("activity_id")
+			if activity_id_str is None:
+				activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
 			else:
-				activityId = int(activityIdStr)
+				activity_id = int(activity_id_str)
 
-			if activityId is None:
+			if activity_id is None:
 				return self.error()
-			result = self.render_page_for_activity(deviceStr, activityId)
+			result = self.render_page_for_activity(device_str, activity_id)
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)

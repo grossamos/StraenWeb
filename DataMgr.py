@@ -53,3 +53,10 @@ class DataMgr(object):
 		if activity_id is None:
 			return None, "Bad parameter."
 		return self.db.retrieve_most_recent_locations(device_str, activity_id, num)
+
+	def retrieve_most_recent_activity_id_for_device(self, device_str):
+		if self.db is None:
+			return None, "No database."
+		if device_str is None or len(device_str) == 0:
+			return None, "Bad parameter."
+		return self.db.retrieve_most_recent_activity_id_for_device(device_str)

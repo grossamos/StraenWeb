@@ -9,12 +9,6 @@ import sys
 import traceback
 import Database
 
-class Location(object):
-	def __init__(self):
-		self.latitude = 0.0
-		self.longitude = 0.0
-		super(Location, self).__init__()
-
 class Device(object):
 	def __init__(self):
 		self.id = 0
@@ -199,7 +193,10 @@ class MongoDatabase(Database.Database):
 			return None
 
 		try:
-			pass
+			device_activities = self.activities_collection.find({"device_str": device_str}).sort("_id", -1).limit(1)
+			if device_activities is not None and device_activities.count() > 0:
+				activity = device_activities.next()
+				return activity["activity_id"]
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
@@ -265,7 +262,10 @@ class MongoDatabase(Database.Database):
 			return None
 
 		try:
-			pass
+			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
+			if activity is not None:
+				metadata = activity[key]
+				return metadata
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
