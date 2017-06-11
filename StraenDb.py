@@ -84,20 +84,6 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None, None, None
 
-	def retrieve_device_activities(self, device_str):
-		if device_str is None:
-			self.log_error(MongoDatabase.retrieve_device_activities.__name__ + "Unexpected empty object: device_str")
-			return None
-
-		try:
-			pass
-		except KeyError:
-			return None
-		except:
-			traceback.print_exc(file=sys.stdout)
-			self.log_error(sys.exc_info()[0])
-		return None
-
 	def retrieve_user_devices(self, user_id):
 		if user_id is None:
 			self.log_error(MongoDatabase.retrieve_user_devices.__name__ + "Unexpected empty object: user_id")
@@ -184,6 +170,18 @@ class MongoDatabase(Database.Database):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return False
+
+	def retrieve_device_activities(self, device_str, start, num_results):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_device_activities.__name__ + "Unexpected empty object: device_str")
+			return None
+
+		try:
+			return list(self.activities_collection.find({"device_str": device_str}).sort("_id", -1).skip(start).limit(num_results))
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
 
 	def retrieve_most_recent_activity_id_for_device(self, device_str):
 		if device_str is None:

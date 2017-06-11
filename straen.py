@@ -394,7 +394,7 @@ class StraenWeb(object):
 	def my_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			activities = self.data_mgr.retrieve_user_activities(user_id)
+			activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
@@ -411,7 +411,7 @@ class StraenWeb(object):
 	def all_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			activities = self.data_mgr.retrieve_user_activities(user_id)
+			activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:

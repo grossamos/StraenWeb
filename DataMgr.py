@@ -11,7 +11,7 @@ class DataMgr(object):
 	def terminate(self):
 		self.db = None
 
-	def retrieve_user_activities(self, user_id):
+	def retrieve_user_activities(self, user_id, start, num_results):
 		if self.db is None:
 			return None, "No database."
 		if user_id is None or len(user_id) == 0:
@@ -21,7 +21,7 @@ class DataMgr(object):
 		devices = self.db.retrieve_user_devices(user_id)
 		if devices is not None:
 			for device in devices:
-				device_activities = self.db.retrieve_device_activities(device_str)
+				device_activities = self.db.retrieve_device_activities(device_str, start, num_results)
 				activities.append(device_activities)
 		return activities
 
