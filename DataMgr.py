@@ -16,7 +16,14 @@ class DataMgr(object):
 			return None, "No database."
 		if user_id is None or len(user_id) == 0:
 			return None, "Bad parameter."
-		return self.db.retrieve_user_activities(user_id)
+
+		activities = []
+		devices = self.db.retrieve_user_devices(user_id)
+		if devices is not None:
+			for device in devices:
+				device_activities = self.db.retrieve_device_activities(device_str)
+				activities.append(device_activities)
+		return activities
 
 	def retrieve_locations(self, device_str, activity_id):
 		if self.db is None:

@@ -267,7 +267,7 @@ class StraenWeb(object):
 		return str
 
 	# Helper function for rendering the map corresonding to a specific device and activity.
-	def render_page_for_activity(self, device_str, activity_id):
+	def render_page_for_activity(self, email, user_realname, device_str, activity_id):
 		if device_str is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
@@ -319,10 +319,10 @@ class StraenWeb(object):
 				powers_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
 
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(product=g_product_name, root_url=g_root_url, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
+		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
 
 	# Helper function for rendering the map corresonding to a multiple devices.
-	def render_page_for_multiple_devices(self, device_strs, user_id):
+	def render_page_for_multiple_devices(self, email, user_realname, device_strs, user_id):
 		if device_strs is None:
 			my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
 			return my_template.render(product=g_product_name, root_url=g_root_url, error="No device IDs were specified.")
@@ -357,7 +357,7 @@ class StraenWeb(object):
 				last_lon = lastLoc['longitude']
 		
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-		return my_template.render(product=g_product_name, root_url=g_root_url, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
+		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 
 	# Renders the errorpage.
 	@cherrypy.expose
@@ -383,7 +383,7 @@ class StraenWeb(object):
 
 			if activity_id is None:
 				return self.error()
-			result = self.render_page_for_activity(device_str, activity_id)
+			result = self.render_page_for_activity("", "", device_str, activity_id)
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
@@ -395,8 +395,11 @@ class StraenWeb(object):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id)
-			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			activities_list_str = ""
+			if activities is not None and isinstance(activities, list):
+				for activity in activities:
+					pass
+			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
 		except:
@@ -409,8 +412,10 @@ class StraenWeb(object):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id)
-			users_following = self.user_mgr.list_users_following(user_id)
 			activities_list_str = ""
+			if activities is not None and isinstance(activities, list):
+				for activity in activities:
+					pass
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)

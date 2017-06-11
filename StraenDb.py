@@ -84,16 +84,13 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None, None, None
 
-	def retrieve_user_activities(self, user_id):
-		if user_id is None:
-			self.log_error(MongoDatabase.retrieve_user_activities.__name__ + "Unexpected empty object: user_id")
+	def retrieve_device_activities(self, device_str):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_device_activities.__name__ + "Unexpected empty object: device_str")
 			return None
 
 		try:
-			user_id_obj = ObjectId(user_id)
-			user = self.users_collection.find_one({"_id": user_id_obj})
-			if user is not None:
-				return user['activities']
+			pass
 		except KeyError:
 			return None
 		except:
@@ -110,7 +107,8 @@ class MongoDatabase(Database.Database):
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				return user['devices']
+				if 'devices' in user:
+					return user['devices']
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
