@@ -79,6 +79,8 @@ def parse_json_loc_obj(db, json_obj):
 		user_name = ""
 		try:
 			user_name = json_obj["User Name"]
+			user_id, user_hash, user_realname = db.retrieve_user(email)
+			db.create_device(device_str, user_id)
 		except:
 			pass
 

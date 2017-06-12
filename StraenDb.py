@@ -83,6 +83,32 @@ class MongoDatabase(Database.Database):
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return None, None, None
+		
+	def create_user_device(self, user_id, device_str):
+		if username is None:
+			self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: username")
+			return False
+		if len(username) == 0:
+			self.log_error(MongoDatabase.create_user_device.__name__ + "username is empty")
+			return False
+		if device_str is None:
+			self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: device_str")
+			return False
+
+		try:
+			user_id_obj = ObjectId(user_id)
+			user = self.users_collection.find_one({"_id": user_id_obj})
+			devices = []
+			if user is not None:
+				if 'devices' in user:
+					devices = user['devices']
+			devices.append(device_str)
+			user['devices'] = devices
+			self.users_collection.save(user)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return True
 
 	def retrieve_user_devices(self, user_id):
 		if user_id is None:
@@ -109,7 +135,8 @@ class MongoDatabase(Database.Database):
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				return user['following']
+				if 'following' in user:
+					return user['following']
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
