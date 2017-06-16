@@ -166,7 +166,9 @@ class MongoDatabase(Database.Database):
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				list = user['following']
+				list = []
+				if 'following' in user:
+					list = user['following']
 				if following_name not in list:
 					list.append(following_name)
 					user['following'] = list
@@ -188,7 +190,9 @@ class MongoDatabase(Database.Database):
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				list = user['devices']
+				list = []
+				if 'devices' in user:
+					list = user['devices']
 				if device_str not in list:
 					list.append(device_str)
 					user['devices'] = list
@@ -240,6 +244,33 @@ class MongoDatabase(Database.Database):
 			post = {"activity_id": str(activity_id), "activty_name": activty_name, "device_str": device_str, "locations": []}
 			self.activities_collection.insert(post)
 			return True
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
+
+	def create_activity_comment(self, device_str, activity_id, commenter_id, comment):
+		if device_str is None:
+			self.log_error(MongoDatabase.create_activity_comment.__name__ + "Unexpected empty object: device_str")
+			return False
+		if activity_id is None:
+			self.log_error(MongoDatabase.create_activity_comment.__name__ + "Unexpected empty object: activity_id")
+			return False
+		if commenter_id is None:
+			self.log_error(MongoDatabase.create_activity_comment.__name__ + "Unexpected empty object: commenter_id")
+			return False
+		if comment is None:
+			self.log_error(MongoDatabase.create_activity_comment.__name__ + "Unexpected empty object: comment")
+			return False
+
+		try:
+			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
+			if len(activity) > 0:
+				data = activity["comments"]
+				data.append({commenter_id, comment})
+				activity["comments"] = data
+				self.activities_collection.save(activity)
+				return True
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
