@@ -358,6 +358,24 @@ class StraenWeb(object):
 		
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
 		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
+		
+	# Helper function for creating a table row describing an activity
+	def render_activity_row(self, activity):
+		row  = "<tr>"
+		row += "<td>"
+		row += activity['activity_id']
+		row += "</td>"
+		row += "</tr>\n"
+		return row
+		
+	# Helper function for creating a table row describing a user
+	def render_user_row(self, user):
+		row  = "<tr>"
+		row += "<td>"
+		row += user
+		row += "</td>"
+		row += "</tr>\n"
+		return row
 
 	# Renders the errorpage.
 	@cherrypy.expose
@@ -398,7 +416,7 @@ class StraenWeb(object):
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					pass
+					activities_list_str += self.render_activity_row(activity)
 			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
@@ -415,7 +433,7 @@ class StraenWeb(object):
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					pass
+					activities_list_str += self.render_activity_row(activity)
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
@@ -432,7 +450,7 @@ class StraenWeb(object):
 			users_list_str = ""
 			if users_following is not None and isinstance(users_following, list):
 				for user in users_following:
-					pass
+					users_list_str += self.render_user_row(user)
 			html_file = os.path.join(g_root_dir, 'html', 'following.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
@@ -449,7 +467,7 @@ class StraenWeb(object):
 			users_list_str = ""
 			if users_followed_by is not None and isinstance(users_followed_by, list):
 				for user in users_followed_by:
-					pass
+					users_list_str += self.render_user_row(user)
 			html_file = os.path.join(g_root_dir, 'html', 'followers.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
@@ -466,7 +484,12 @@ class StraenWeb(object):
 			device_list_str = ""
 			if devices is not None and isinstance(devices, list):
 				for device in devices:
-					pass
+					device_list_str += "<tr>"
+					device_list_str += "<td>"
+					device_list_str += device
+					device_list_str += "\n"
+					device_list_str += "</td>"
+					device_list_str += "</tr>\n"
 			html_file = os.path.join(g_root_dir, 'html', 'device_list.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)

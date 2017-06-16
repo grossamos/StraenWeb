@@ -21,8 +21,8 @@ class DataMgr(object):
 		devices = self.db.retrieve_user_devices(user_id)
 		if devices is not None:
 			for device in devices:
-				device_activities = self.db.retrieve_device_activities(device_str, start, num_results)
-				activities.append(device_activities)
+				device_activities = self.db.retrieve_device_activities(device, start, num_results)
+				activities.extend(device_activities)
 		return activities
 
 	def retrieve_locations(self, device_str, activity_id):
