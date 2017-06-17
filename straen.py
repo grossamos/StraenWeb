@@ -363,7 +363,19 @@ class StraenWeb(object):
 	def render_activity_row(self, activity):
 		row  = "<tr>"
 		row += "<td>"
-		row += activity['activity_id']
+		if 'activity_id' in activity:
+			row += activity['activity_id']
+		else:
+			row += ""
+		row += "</td>"
+		row += "<td><a href=\"" + g_root_url + "\\device\\" + activity['device_str'] + "?activity_id=" + activity['activity_id'] + "\">"
+		if 'activity_name' in activity:
+			row += activity['activity_name']
+		else:
+			row += "Untitled"
+		row += "</a></td>"
+		row += "<td>"
+		row += "<input type=\"checkbox\" name=\"public\" value=\"\" checked>"
 		row += "</td>"
 		row += "</tr>\n"
 		return row

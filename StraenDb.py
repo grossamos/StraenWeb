@@ -318,8 +318,9 @@ class MongoDatabase(Database.Database):
 		try:
 			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
 			if activity is not None:
-				metadata = activity[key]
-				return metadata
+				if key in activity:
+					metadata = activity[key]
+					return metadata
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
