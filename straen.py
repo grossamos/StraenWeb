@@ -360,7 +360,7 @@ class StraenWeb(object):
 		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 		
 	# Helper function for creating a table row describing an activity
-	def render_activity_row(self, activity):
+	def render_activity_row(self, user_realname, activity):
 		row  = "<tr>"
 		row += "<td>"
 		if 'activity_id' in activity:
@@ -368,7 +368,11 @@ class StraenWeb(object):
 		else:
 			row += ""
 		row += "</td>"
-		row += "<td><a href=\"" + g_root_url + "\\device\\" + activity['device_str'] + "?activity_id=" + activity['activity_id'] + "\">"
+		row += "<td>"
+		if user_realname is not None:
+			row += user_realname
+			row += "<br>"
+		row += "<a href=\"" + g_root_url + "\\device\\" + activity['device_str'] + "?activity_id=" + activity['activity_id'] + "\">"
 		if 'activity_name' in activity:
 			row += activity['activity_name']
 		else:
@@ -428,7 +432,7 @@ class StraenWeb(object):
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					activities_list_str += self.render_activity_row(activity)
+					activities_list_str += self.render_activity_row(user_realname, activity)
 			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
@@ -445,7 +449,7 @@ class StraenWeb(object):
 			activities_list_str = ""
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					activities_list_str += self.render_activity_row(activity)
+					activities_list_str += self.render_activity_row(None, activity)
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
