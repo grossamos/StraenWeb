@@ -308,6 +308,9 @@ class MongoDatabase(Database.Database):
 		return False
 
 	def retrieve_metadata(self, key, device_str, activity_id):
+		if key is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: key")
+			return None
 		if device_str is None:
 			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
 			return None
