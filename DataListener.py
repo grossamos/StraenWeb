@@ -93,10 +93,17 @@ def parse_json_loc_obj(db, json_obj):
 			pass
 		
 		# Parse the location data.
-		lat = json_obj["Latitude"]
-		lon = json_obj["Longitude"]
-		alt = json_obj["Altitude"]
-		db.create_location(device_str, activity_id, date_time, lat, lon, alt)
+		try:
+			lat = json_obj["Latitude"]
+			lon = json_obj["Longitude"]
+			alt = json_obj["Altitude"]
+			db.create_location(device_str, activity_id, date_time, lat, lon, alt)
+		except ValueError, e:
+			log_info("ValueError in JSON location data - reason " + str(e) + ". JSON str = " + str(json_obj))
+		except KeyError, e:
+			log_info("KeyError in JSON location data - reason " + str(e) + ". JSON str = " + str(json_obj))
+		except:
+			log_info("Error parsing JSON location data. JSON object = " + str(json_obj))
 
 		# Parse the rest of the data, which will be a combination of metadata and sensor data.
 		for item in json_obj.iteritems():

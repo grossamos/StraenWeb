@@ -402,9 +402,9 @@ class MongoDatabase(Database.Database):
 				if self.create_activity(activity_id, "", device_str):
 					activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
 			if activity is not None:
-				list = activity['locations']
-				if list is None:
-					list = []
+				list = []
+				if 'locations' in activity:
+					list = activity['locations']
 				value = {"time": date_time, "latitude": latitude, "longitude": longitude, "altitude": altitude}
 				list.append(value)
 				activity['locations'] = list
