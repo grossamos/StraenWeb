@@ -83,7 +83,6 @@ class UserMgr(object):
 			return False, "Bad parameter."
 		if following_name is None or len(following_name) == 0:
 			return False, "Bad parameter."
-
 		return self.db.create_following_entry(email, followed_by_name)
 
 	def retrieve_user(self, email):

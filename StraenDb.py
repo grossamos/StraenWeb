@@ -323,7 +323,8 @@ class MongoDatabase(Database.Database):
 			if activity is not None:
 				if key in activity:
 					metadata = activity[key]
-					return metadata
+					if isinstance(metadata, list):
+						return metadata
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
