@@ -58,7 +58,7 @@ class MongoDatabase(Database.Database):
 			return False
 
 		try:
-			post = {"username": username, "realname": realname, "hash": hash, "devices": [], "following": []}
+			post = {"username": username, "realname": realname, "hash": hash, "devices": [], "following": [], "followed by": []}
 			self.users_collection.insert(post)
 			return True
 		except:
@@ -148,7 +148,11 @@ class MongoDatabase(Database.Database):
 			return None
 
 		try:
-			pass
+			user_id_obj = ObjectId(user_id)
+			user = self.users_collection.find_one({"_id": user_id_obj})
+			if user is not None:
+				if 'following' in user:
+					return user['followed by']
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
@@ -172,6 +176,30 @@ class MongoDatabase(Database.Database):
 				if following_name not in list:
 					list.append(following_name)
 					user['following'] = list
+					self.users_collection.save(user)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return False
+
+	def create_followed_by_entry(self, user_id, followed_by_name):
+		if user_id is None:
+			self.log_error(MongoDatabase.create_following_entry.__name__ + "Unexpected empty object: user_id")
+			return None
+		if followed_by_name is None:
+			self.log_error(MongoDatabase.create_following_entry.__name__ + "Unexpected empty object: followed_by_name")
+			return False
+
+		try:
+			user_id_obj = ObjectId(user_id)
+			user = self.users_collection.find_one({"_id": user_id_obj})
+			if user is not None:
+				list = []
+				if 'followed by' in user:
+					list = user['followed by']
+				if followed_by_name not in list:
+					list.append(followed_by_name)
+					user['followed by'] = list
 					self.users_collection.save(user)
 		except:
 			traceback.print_exc(file=sys.stdout)
