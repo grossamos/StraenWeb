@@ -25,6 +25,26 @@ class DataMgr(object):
 				activities.extend(device_activities)
 		return activities
 
+	def retrieve_activity_visibility(self, device_str, activity_id):
+		if self.db is None:
+			return None, "No database."
+		if device_str is None or len(device_str) == 0:
+			return None, "Bad parameter."
+		if activity_id is None:
+			return None, "Bad parameter."
+		return self.db.retrieve_activity_visibility(device_str, activity_id)
+	
+	def update_activity_visibility(self, device_str, activity_id, visibility):
+		if self.db is None:
+			return None, "No database."
+		if device_str is None or len(device_str) == 0:
+			return None, "Bad parameter."
+		if activity_id is None:
+			return None, "Bad parameter."
+		if visibility is None:
+			return None, "Bad parameter."
+		return self.db.update_activity_visibility(device_str, activity_id, visibility)
+	
 	def retrieve_locations(self, device_str, activity_id):
 		if self.db is None:
 			return None, "No database."

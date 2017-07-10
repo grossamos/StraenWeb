@@ -379,7 +379,11 @@ class StraenWeb(object):
 			row += "Untitled"
 		row += "</a></td>"
 		row += "<td>"
-		row += "<input type=\"checkbox\" name=\"public\" value=\"\" checked>"
+		checkboxValue = "checked"
+		if 'visibility' in activity:
+			if activity['visibility'] is "private":
+				checkboxValue = "unchecked"
+		row += "<input type=\"checkbox\" name=\"public\" value=\"\" " + checkboxValue + ">"
 		row += "</td>"
 		row += "</tr>\n"
 		return row
@@ -392,6 +396,14 @@ class StraenWeb(object):
 		row += "</td>"
 		row += "</tr>\n"
 		return row
+	
+	# Returns TRUE if the logged in user is allowed to view the specified activity.
+	def user_can_view_activity(self, device_str, activity_id):
+		visibility = self.data_mgr.retrieve_activity_visibility(device_str, activity_id)
+		if visibility is not None:
+			if visibility is "public":
+				return True
+		return True
 
 	# Renders the errorpage.
 	@cherrypy.expose
@@ -409,6 +421,8 @@ class StraenWeb(object):
 	@cherrypy.expose
 	def device(self, device_str, *args, **kw):
 		try:
+			result = False
+			
 			activity_id_str = cherrypy.request.params.get("activity_id")
 			if activity_id_str is None:
 				activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
@@ -417,7 +431,9 @@ class StraenWeb(object):
 
 			if activity_id is None:
 				return self.error()
-			result = self.render_page_for_activity("", "", device_str, activity_id)
+				
+			if self.user_can_view_activity(device_str, activity_id):
+				result = self.render_page_for_activity("", "", device_str, activity_id)
 			return result
 		except:
 			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)

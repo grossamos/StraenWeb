@@ -269,13 +269,53 @@ class MongoDatabase(Database.Database):
 			return False
 
 		try:
-			post = {"activity_id": str(activity_id), "activty_name": activty_name, "device_str": device_str, "locations": []}
+			post = {"activity_id": str(activity_id), "activty_name": activty_name, "device_str": device_str, "visibility": "public", "locations": []}
 			self.activities_collection.insert(post)
 			return True
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
 		return False
+
+	def retrieve_activity_visibility(self, device_str, activity_id):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
+			return None
+		if activity_id is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
+			return None
+
+		try:
+			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
+			if activity is not None:
+				if "visibility" in activity:
+					visibility = activity["visibility"]
+					return visibility
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
+
+	def update_activity_visibility(self, device_str, activity_id, visibility):
+		if device_str is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
+			return None
+		if activity_id is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
+			return None
+		if visibility is None:
+			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: visibility")
+			return None
+
+		try:
+			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
+			if activity is not None:
+				activity["visibility"] = visibility
+				self.activities_collection.save(activity)
+		except:
+			traceback.print_exc(file=sys.stdout)
+			self.log_error(sys.exc_info()[0])
+		return None
 
 	def create_activity_comment(self, device_str, activity_id, commenter_id, comment):
 		if device_str is None:
