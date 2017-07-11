@@ -380,10 +380,15 @@ class StraenWeb(object):
 		row += "</a></td>"
 		row += "<td>"
 		checkboxValue = "checked"
+		checkboxLabel = "Public"
 		if 'visibility' in activity:
 			if activity['visibility'] is "private":
 				checkboxValue = "unchecked"
-		row += "<input type=\"checkbox\" name=\"public\" value=\"\" " + checkboxValue + ">"
+				checkboxLabel = "Private"
+		row += "<div>\n"
+		row += "\t<input type=\"checkbox\" name=\"public\" value=\"\" " + checkboxValue + ">"
+		row += "\t<label for=\"visibility\">" + checkboxLabel + "</label>"
+		row += "</div>\n"
 		row += "</td>"
 		row += "</tr>\n"
 		return row
