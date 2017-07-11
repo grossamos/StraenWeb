@@ -205,12 +205,12 @@ class StraenWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def list_users_following(self, email=None, *args, **kw):
+	def list_users_followed(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 		
 		try:
-			followers = self.user_mgr.list_users_following(email)
+			followers = self.user_mgr.list_users_followed(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["
@@ -230,12 +230,12 @@ class StraenWeb(object):
 
 	@cherrypy.tools.json_out()
 	@cherrypy.expose
-	def list_users_followed_by(self, email=None, *args, **kw):
+	def list_followers(self, email=None, *args, **kw):
 		if email is None:
 			return ""
 
 		try:
-			followers = self.user_mgr.retrieve_users_followed_by(email)
+			followers = self.user_mgr.retrieve_followers(email)
 			
 			cherrypy.response.headers['Content-Type'] = 'application/json'
 			response = "["

@@ -126,9 +126,9 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def retrieve_users_following(self, user_id):
+	def retrieve_users_followed(self, user_id):
 		if user_id is None:
-			self.log_error(MongoDatabase.retrieve_users_following.__name__ + "Unexpected empty object: user_id")
+			self.log_error(MongoDatabase.retrieve_users_followed.__name__ + "Unexpected empty object: user_id")
 			return None
 
 		try:
@@ -142,17 +142,17 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return None
 
-	def retrieve_users_followed_by(self, user_id):
+	def retrieve_followers(self, user_id):
 		if user_id is None:
-			self.log_error(MongoDatabase.retrieve_users_followed_by.__name__ + "Unexpected empty object: user_id")
+			self.log_error(MongoDatabase.retrieve_followers.__name__ + "Unexpected empty object: user_id")
 			return None
 
 		try:
 			user_id_obj = ObjectId(user_id)
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
-				if 'following' in user:
-					return user['followed by']
+				if 'followers' in user:
+					return user['followers']
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
@@ -182,12 +182,12 @@ class MongoDatabase(Database.Database):
 			self.log_error(sys.exc_info()[0])
 		return False
 
-	def create_followed_by_entry(self, user_id, followed_by_name):
+	def create_follower_entry(self, user_id, follower_name):
 		if user_id is None:
-			self.log_error(MongoDatabase.create_following_entry.__name__ + "Unexpected empty object: user_id")
+			self.log_error(MongoDatabase.create_follower_entry.__name__ + "Unexpected empty object: user_id")
 			return None
-		if followed_by_name is None:
-			self.log_error(MongoDatabase.create_following_entry.__name__ + "Unexpected empty object: followed_by_name")
+		if follower_name is None:
+			self.log_error(MongoDatabase.create_follower_entry.__name__ + "Unexpected empty object: follower_name")
 			return False
 
 		try:
@@ -195,11 +195,11 @@ class MongoDatabase(Database.Database):
 			user = self.users_collection.find_one({"_id": user_id_obj})
 			if user is not None:
 				list = []
-				if 'followed by' in user:
-					list = user['followed by']
-				if followed_by_name not in list:
-					list.append(followed_by_name)
-					user['followed by'] = list
+				if 'follower' in user:
+					list = user['follower']
+				if follower_name not in list:
+					list.append(follower_name)
+					user['follower'] = list
 					self.users_collection.save(user)
 		except:
 			traceback.print_exc(file=sys.stdout)

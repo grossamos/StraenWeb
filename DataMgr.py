@@ -44,7 +44,7 @@ class DataMgr(object):
 		if visibility is None:
 			return None, "Bad parameter."
 		return self.db.update_activity_visibility(device_str, activity_id, visibility)
-	
+
 	def retrieve_locations(self, device_str, activity_id):
 		if self.db is None:
 			return None, "No database."
