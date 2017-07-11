@@ -483,7 +483,7 @@ class StraenWeb(object):
 	def following(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			users_following = self.user_mgr.list_users_following(user_id)
+			users_following = self.user_mgr.list_users_followed(user_id)
 			users_list_str = ""
 			if users_following is not None and isinstance(users_following, list):
 				for user in users_following:
@@ -500,7 +500,7 @@ class StraenWeb(object):
 	def followers(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
-			users_followed_by = self.user_mgr.list_users_followed_by(user_id)
+			users_followed_by = self.user_mgr.list_followers(user_id)
 			users_list_str = ""
 			if users_followed_by is not None and isinstance(users_followed_by, list):
 				for user in users_followed_by:
