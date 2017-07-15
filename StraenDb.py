@@ -312,10 +312,11 @@ class MongoDatabase(Database.Database):
 			if activity is not None:
 				activity["visibility"] = visibility
 				self.activities_collection.save(activity)
+				return True
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
-		return None
+		return False
 
 	def create_activity_comment(self, device_str, activity_id, commenter_id, comment):
 		if device_str is None:

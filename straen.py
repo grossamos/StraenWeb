@@ -128,7 +128,6 @@ class StraenWeb(object):
 			return response
 		except:
 			pass
-
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -200,7 +199,6 @@ class StraenWeb(object):
 			return response
 		except:
 			cherrypy.log.error('Unhandled exception in update_metadata', 'EXEC', logging.WARNING)
-
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -225,7 +223,6 @@ class StraenWeb(object):
 			return response
 		except:
 			cherrypy.log.error('Unhandled exception in list_users_following', 'EXEC', logging.WARNING)
-
 		return ""
 
 	@cherrypy.tools.json_out()
@@ -250,9 +247,25 @@ class StraenWeb(object):
 			return response
 		except:
 			cherrypy.log.error('Unhandled exception in list_users_followed_by', 'EXEC', logging.WARNING)
-
 		return ""
-		
+	
+	@cherrypy.expose
+	def update_visibility(self, device_str, activity_id, visibility):
+		if device_str is None:
+			pass
+		if activity_id is None:
+			pass
+
+		try:
+			if visibility == "true" or visibility == "True":
+				new_visibility = "public"
+			else:
+				new_visibility = "private"
+
+			self.data_mgr.update_activity_visibility(device_str, int(activity_id), new_visibility)
+		except:
+			cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
+
 	# Helper function for building the navigation bar.
 	def create_navbar(self, email):
 		str = "<nav>\n" \
@@ -360,7 +373,7 @@ class StraenWeb(object):
 		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 		
 	# Helper function for creating a table row describing an activity
-	def render_activity_row(self, user_realname, activity):
+	def render_activity_row(self, user_realname, activity, row_id):
 		row  = "<tr>"
 		row += "<td>"
 		if 'activity_id' in activity:
@@ -382,12 +395,12 @@ class StraenWeb(object):
 		checkboxValue = "checked"
 		checkboxLabel = "Public"
 		if 'visibility' in activity:
-			if activity['visibility'] is "private":
+			if activity['visibility'] == "private":
 				checkboxValue = "unchecked"
 				checkboxLabel = "Private"
 		row += "<div>\n"
-		row += "\t<input type=\"checkbox\" name=\"public\" value=\"\" " + checkboxValue + ">"
-		row += "\t<label for=\"visibility\">" + checkboxLabel + "</label>"
+		row += "\t<input type=\"checkbox\" value=\"\" " + checkboxValue + " id=\"" + str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + activity['device_str'] + "\", " + activity['activity_id'] + ")';>"
+		row += "<span>" + checkboxLabel + "</span></label>"
 		row += "</div>\n"
 		row += "</td>"
 		row += "</tr>\n"
@@ -451,9 +464,11 @@ class StraenWeb(object):
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
 			activities_list_str = ""
+			row_id = 0
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					activities_list_str += self.render_activity_row(user_realname, activity)
+					activities_list_str += self.render_activity_row(user_realname, activity, row_id)
+					row_id = row_id + 1
 			html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
@@ -468,9 +483,11 @@ class StraenWeb(object):
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
 			activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
 			activities_list_str = ""
+			row_id = 0
 			if activities is not None and isinstance(activities, list):
 				for activity in activities:
-					activities_list_str += self.render_activity_row(None, activity)
+					activities_list_str += self.render_activity_row(None, activity, row_id)
+					row_id = row_id + 1
 			html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
@@ -509,7 +526,7 @@ class StraenWeb(object):
 			my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
 			return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
 		except:
-			cherrypy.log.error('Unhandled exception in followed_by', 'EXEC', logging.WARNING)
+			cherrypy.log.error('Unhandled exception in followers', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of a user's devices.

@@ -17,6 +17,22 @@
 
 <body>
 
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript">
+
+function handleVisibilityClick(cb, device_id, activity_id)
+{
+	$.ajax({ type: 'POST', url: "${root_url}/update_visibility/" + device_id + "/" + activity_id + "/" + cb.checked, dataType: "application/json" });
+	id = cb.id;
+	if ($('#' + id).is(':checked')) {
+		$('#' + id + "+span").html('Public');
+	} else {
+		$('#' + id + "+span").html('Private');
+	}
+}
+
+</script>
+
 <section class="nav">
 ${nav}
 </section>
