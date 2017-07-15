@@ -23,6 +23,12 @@
 function handleVisibilityClick(cb, device_id, activity_id)
 {
 	$.ajax({ type: 'POST', url: "${root_url}/update_visibility/" + device_id + "/" + activity_id + "/" + cb.checked, dataType: "application/json" });
+	id = cb.id;
+	if ($('#' + id).is(':checked')) {
+		$('#' + id + "+span").html('Public');
+	} else {
+		$('#' + id + "+span").html('Private');
+	}
 }
 
 </script>
