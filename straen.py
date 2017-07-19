@@ -59,6 +59,22 @@ def check_auth(*args, **kwargs):
 	# is required and the entry is evaluated as a list of conditions that the user must fulfill
 	conditions = cherrypy.request.config.get('auth.require', None)
 	if conditions is not None:
+		requested_url = cherrypy.request.request_line.split()[1]
+		requested_url_parts = requested_url.split('/')
+		requested_url_parts = filter(lambda part: part != '', requested_url_parts)
+		
+		# If the user is trying to view an activity then make sure they have permissions
+		# to view it. First check to see if it's a public activity.
+		if requested_url_parts[0] == "device":
+			url_params = requested_url_parts[1].split("?")
+			if url_params is not None and len(url_params) >= 2:
+				device = url_params[0]
+				activity_params = url_params[1].split("=")
+				if activity_params is not None and len(activity_params) >= 2:
+					activity_id = activity_params[1]
+					if g_app.activity_is_public(device, activity_id):
+						return
+
 		username = cherrypy.session.get(SESSION_KEY)
 		if username:
 			cherrypy.request.login = username
@@ -81,11 +97,6 @@ def require(*conditions):
 	return decorate
 
 class StraenWeb(object):
-	_cp_config = {
-		'tools.sessions.on': True,
-		'tools.auth.on': True
-	}
-
 	def __init__(self, user_mgr, data_mgr):
 		self.user_mgr = user_mgr
 		self.data_mgr = data_mgr
@@ -416,11 +427,13 @@ class StraenWeb(object):
 		return row
 	
 	# Returns TRUE if the logged in user is allowed to view the specified activity.
-	def user_can_view_activity(self, device_str, activity_id):
+	def activity_is_public(self, device_str, activity_id):
 		visibility = self.data_mgr.retrieve_activity_visibility(device_str, activity_id)
 		if visibility is not None:
-			if visibility is "public":
+			if visibility == "public":
 				return True
+			elif visibility == "private":
+				return False
 		return True
 
 	# Renders the errorpage.
@@ -437,6 +450,7 @@ class StraenWeb(object):
 
 	# Renders the map page for a single device.
 	@cherrypy.expose
+	@require()
 	def device(self, device_str, *args, **kw):
 		try:
 			result = False
@@ -449,16 +463,15 @@ class StraenWeb(object):
 
 			if activity_id is None:
 				return self.error()
-				
-			if self.user_can_view_activity(device_str, activity_id):
-				result = self.render_page_for_activity("", "", device_str, activity_id)
-			return result
+
+			return self.render_page_for_activity("", "", device_str, activity_id)
 		except:
 			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
 		return self.error()
 
 	# Renders the list of the specified user's activities.
 	@cherrypy.expose
+	@require()
 	def my_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
@@ -478,6 +491,7 @@ class StraenWeb(object):
 
 	# Renders the list of all activities the specified user is allowed to view.
 	@cherrypy.expose
+	@require()
 	def all_activities(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
@@ -497,6 +511,7 @@ class StraenWeb(object):
 
 	# Renders the list of users the specified user is following.
 	@cherrypy.expose
+	@require()
 	def following(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
@@ -514,6 +529,7 @@ class StraenWeb(object):
 
 	# Renders the list of users that are following the specified user.
 	@cherrypy.expose
+	@require()
 	def followers(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
@@ -531,6 +547,7 @@ class StraenWeb(object):
 
 	# Renders the list of a user's devices.
 	@cherrypy.expose
+	@require()
 	def device_list(self, email, *args, **kw):
 		try:
 			user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
@@ -673,10 +690,15 @@ user_mgr = UserMgr.UserMgr(g_root_dir)
 data_mgr = DataMgr.DataMgr(g_root_dir)
 g_app = StraenWeb(user_mgr, data_mgr)
 
+cherrypy.tools.my_auth = cherrypy.Tool('before_handler', check_auth)
+
 conf = {
 	'/':
 	{
-		'tools.staticdir.root': g_root_dir
+		'tools.staticdir.root': g_root_dir,
+        'tools.my_auth.on': True,
+        'tools.sessions.on': True,
+        'tools.sessions.name': 'my_auth'
 	},
 	'/css':
 	{
@@ -692,7 +714,7 @@ conf = {
 	{
 		'tools.staticdir.on': True,
 		'tools.staticdir.dir': 'media',
-	}
+	},
 }
 
 cherrypy.config.update( {
@@ -700,5 +722,5 @@ cherrypy.config.update( {
 					   'requests.show_tracebacks': False,
 					   'log.access_file': g_access_log,
 					   'log.error_file': g_error_log } )
-cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
+
 cherrypy.quickstart(g_app, config=conf)
