@@ -448,6 +448,21 @@ class StraenWeb(object):
 			pass
 		return my_template.render(product=g_product_name, root_url=g_root_url, error=str)
 
+	# Renders the map page for the current activity from a single device.
+	@cherrypy.expose
+	def live(self, device_str, str=None):
+		try:
+			result = False
+			
+			activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
+			if activity_id is None:
+				return self.error()
+
+			return self.render_page_for_activity("", "", device_str, activity_id)
+		except:
+			cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
+		return self.error()
+
 	# Renders the map page for a single device.
 	@cherrypy.expose
 	@require()
