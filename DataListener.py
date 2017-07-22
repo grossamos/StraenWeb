@@ -25,6 +25,8 @@ g_listener = None
 CADENCE_KEY    = "Cadence"
 HEART_RATE_KEY = "Heart Rate"
 POWER_KEY      = "Power"
+SPEED_KEY      = "Current Speed"
+PACE_KEY       = "Current Pace"
 
 def signal_handler(signal, frame):
 	log_info("Exiting...")
@@ -112,7 +114,7 @@ def parse_json_loc_obj(db, json_obj):
 			if not key in g_not_meta_data:
 				if key in [ CADENCE_KEY, HEART_RATE_KEY, POWER_KEY ]:
 					db.create_sensordata(device_str, activity_id, date_time, key, value)
-				else:
+				elif key in [ SPEED_KEY, PACE_KEY ]:
 					db.create_metadata(device_str, activity_id, date_time, key, value)
 
 		# Update the user device association.

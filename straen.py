@@ -321,26 +321,34 @@ class StraenWeb(object):
 		current_speeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, device_str, activity_id)
 		current_speeds_str = ""
 		if current_speeds is not None and isinstance(current_speeds, list):
-			for value in current_speeds:
-				current_speeds_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+			for current_speed in current_speeds:
+				time = current_speed.keys()[0]
+				value = current_speed.values()[0]
+				current_speeds_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
 		heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, device_str, activity_id)
 		heart_rates_str = ""
 		if heart_rates is not None and isinstance(heart_rates, list):
-			for value in heart_rates:
-				heart_rates_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+			for heart_rate in heart_rates:
+				time = heart_rate.keys()[0]
+				value = heart_rate.values()[0]
+				heart_rates_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
 		cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, device_str, activity_id)
 		cadences_str = ""
 		if cadences is not None and isinstance(cadences, list):
-			for value in cadences:
-				cadences_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+			for cadence in cadences:
+				time = cadence.keys()[0]
+				value = cadence.values()[0]
+				cadences_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
 		powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, device_str, activity_id)
 		powers_str = ""
 		if powers is not None and isinstance(powers, list):
-			for value in powers:
-				powers_str += "\t\t\t\t{ date: new Date(" + str(value[0]) + "), value: " + str(value[1]) + " },\n"
+			for power in powers:
+				time = power.keys()[0]
+				value = power.values()[0]
+				powers_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
 		my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
 		return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)

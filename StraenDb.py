@@ -279,10 +279,10 @@ class MongoDatabase(Database.Database):
 
 	def retrieve_activity_visibility(self, device_str, activity_id):
 		if device_str is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
+			self.log_error(MongoDatabase.retrieve_activity_visibility.__name__ + "Unexpected empty object: device_str")
 			return None
 		if activity_id is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
+			self.log_error(MongoDatabase.retrieve_activity_visibility.__name__ + "Unexpected empty object: activity_id")
 			return None
 
 		try:
@@ -298,13 +298,13 @@ class MongoDatabase(Database.Database):
 
 	def update_activity_visibility(self, device_str, activity_id, visibility):
 		if device_str is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: device_str")
+			self.log_error(MongoDatabase.update_activity_visibility.__name__ + "Unexpected empty object: device_str")
 			return None
 		if activity_id is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: activity_id")
+			self.log_error(MongoDatabase.update_activity_visibility.__name__ + "Unexpected empty object: activity_id")
 			return None
 		if visibility is None:
-			self.log_error(MongoDatabase.retrieve_metadata.__name__ + "Unexpected empty object: visibility")
+			self.log_error(MongoDatabase.update_activity_visibility.__name__ + "Unexpected empty object: visibility")
 			return None
 
 		try:
@@ -368,7 +368,12 @@ class MongoDatabase(Database.Database):
 				if self.create_activity(activity_id, "", device_str):
 					activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
 			if len(activity) > 0:
-				activity[key] = value
+				data = []
+				if key in activity:
+					data = activity[key]
+				value = { str(date_time): str(value) }
+				data.append(value)
+				activity[key] = data
 				self.activities_collection.save(activity)
 				return True
 		except:
@@ -422,8 +427,12 @@ class MongoDatabase(Database.Database):
 				if self.create_activity(activity_id, "", device_str):
 					activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
 			if len(activity) > 0:
-				data = activity[sensor_type]
-				data.append({date_time, value})
+				data = []
+				if sensor_type in activity:
+					data = activity[sensor_type]
+				value = { str(date_time): str(value) }
+				data.append(value)
+				activity[sensor_type] = sensor_type
 				self.activities_collection.save(activity)
 				return True
 		except:
