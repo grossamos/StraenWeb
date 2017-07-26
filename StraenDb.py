@@ -432,7 +432,7 @@ class MongoDatabase(Database.Database):
 					data = activity[sensor_type]
 				value = { str(date_time): str(value) }
 				data.append(value)
-				activity[sensor_type] = sensor_type
+				activity[sensor_type] = data
 				self.activities_collection.save(activity)
 				return True
 		except:
