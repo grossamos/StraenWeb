@@ -29,17 +29,6 @@ class Database(object):
 			return ""
 		return "\"" + encodable.replace("\"", "\"\"") + "\""
 
-class MysqlDatabase(Database):
-	def __init__(self, rootDir):
-		self.db_file = os.path.join(root_dir, 'exert.sqlite')
-		Database.__init__(self, rootDir)
-	
-	def connect(self):
-		pass
-
-	def execute(self, sql):
-		pass
-
 class SqliteDatabase(Database):
 	def __init__(self, rootDir):
 		Database.__init__(self, rootDir)
