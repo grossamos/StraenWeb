@@ -453,9 +453,10 @@ class MongoDatabase(Database.Database):
 
 		try:
 			activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
-			if activity is None:
-				sensor_data = activity[sensor_type]
-				return sensor_data
+			if activity is not None:
+				if sensor_type in activity:
+					sensor_data = activity[sensor_type]
+					return sensor_data
 		except:
 			traceback.print_exc(file=sys.stdout)
 			self.log_error(sys.exc_info()[0])
