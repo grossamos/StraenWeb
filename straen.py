@@ -170,7 +170,7 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				distance = distances[len(distances) - 1]
-				value = distance.values()[0]
+				value = float(distance.values()[0])
 				response += json.dumps({"name":DISTANCE_KEY, "value":"{:.2f}".format(value)})
 
 			avg_speeds = self.data_mgr.retrieve_metadata(AVG_SPEED_KEY, device_str, activity_id)
@@ -178,7 +178,7 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				speed =  avg_speeds[len(avg_speeds) - 1]
-				value = speed.values()[0]
+				value = float(speed.values()[0])
 				response += json.dumps({"name":AVG_SPEED_KEY, "value":"{:.2f}".format(value)})
 
 			moving_speeds = self.data_mgr.retrieve_metadata(MOVING_SPEED_KEY, device_str, activity_id)
@@ -186,7 +186,7 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				speed =  moving_speeds[len(moving_speeds) - 1]
-				value = speed.values()[0]
+				value = float(speed.values()[0])
 				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(value)})
 
 			heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_KEY, device_str, activity_id)
@@ -194,15 +194,16 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				heart_rate =  heart_rates[len(heart_rates) - 1]
-				value = heart_rate.values()[0]
+				value = float(heart_rate.values()[0])
 				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(value)})
+			print "here5"
 
 			cadences = self.data_mgr.retrieve_sensordata(CADENCE_KEY, device_str, activity_id)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				cadence =  cadences[len(cadences) - 1]
-				value = cadence.values()[0]
+				value = float(cadence.values()[0])
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(value)})
 
 			powers = self.data_mgr.retrieve_sensordata(POWER_KEY, device_str, activity_id)
@@ -210,7 +211,7 @@ class StraenWeb(object):
 				if len(response) > 1:
 					response += ","
 				power =  powers[len(powers) - 1]
-				value = power.values()[0]
+				value = float(power.values()[0])
 				response += json.dumps({"name":POWER_KEY, "value":"{:.2f} watts".format(value)})
 
 			response += "]"
