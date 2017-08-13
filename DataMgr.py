@@ -68,6 +68,8 @@ class DataMgr(object):
 	def retrieve_sensordata(self, key, device_str, activity_id):
 		if self.db is None:
 			return None, "No database."
+		if key is None or len(key) == 0:
+			return None, "Bad parameter."
 		if device_str is None or len(device_str) == 0:
 			return None, "Bad parameter."
 		if activity_id is None:
