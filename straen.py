@@ -43,10 +43,6 @@ MOVING_SPEED_KEY  = "Moving Speed"
 HEART_RATE_KEY    = "Heart Rate"
 POWER_KEY         = "Power"
 
-CADENCE_DB_KEY    = 1
-HEART_RATE_DB_KEY = 2
-POWER_DB_KEY      = 3
-
 def signal_handler(signal, frame):
 	global g_app
 	print "Exiting..."
@@ -187,19 +183,19 @@ class StraenWeb(object):
 					response += ","
 				response += json.dumps({"name":MOVING_SPEED_KEY, "value":"{:.2f}".format(moving_speeds[-1][1])})
 
-			heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, device_str, activity_id)
+			heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_KEY, device_str, activity_id)
 			if heart_rates != None and len(heart_rates) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":HEART_RATE_KEY, "value":"{:.2f} bpm".format(heart_rates[-1][1])})
 
-			cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, device_str, activity_id)
+			cadences = self.data_mgr.retrieve_sensordata(CADENCE_KEY, device_str, activity_id)
 			if cadences != None and len(cadences) > 0:
 				if len(response) > 1:
 					response += ","
 				response += json.dumps({"name":CADENCE_KEY, "value":"{:.2f}".format(distances[-1][1])})
 
-			powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, device_str, activity_id)
+			powers = self.data_mgr.retrieve_sensordata(POWER_KEY, device_str, activity_id)
 			if powers != None and len(powers) > 0:
 				if len(response) > 1:
 					response += ","
@@ -326,7 +322,7 @@ class StraenWeb(object):
 				value = current_speed.values()[0]
 				current_speeds_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-		heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_DB_KEY, device_str, activity_id)
+		heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_KEY, device_str, activity_id)
 		heart_rates_str = ""
 		if heart_rates is not None and isinstance(heart_rates, list):
 			for heart_rate in heart_rates:
@@ -334,7 +330,7 @@ class StraenWeb(object):
 				value = heart_rate.values()[0]
 				heart_rates_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-		cadences = self.data_mgr.retrieve_sensordata(CADENCE_DB_KEY, device_str, activity_id)
+		cadences = self.data_mgr.retrieve_sensordata(CADENCE_KEY, device_str, activity_id)
 		cadences_str = ""
 		if cadences is not None and isinstance(cadences, list):
 			for cadence in cadences:
@@ -342,7 +338,7 @@ class StraenWeb(object):
 				value = cadence.values()[0]
 				cadences_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-		powers = self.data_mgr.retrieve_sensordata(POWER_DB_KEY, device_str, activity_id)
+		powers = self.data_mgr.retrieve_sensordata(POWER_KEY, device_str, activity_id)
 		powers_str = ""
 		if powers is not None and isinstance(powers, list):
 			for power in powers:
