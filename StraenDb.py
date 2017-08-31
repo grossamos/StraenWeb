@@ -4,7 +4,6 @@ from bson.objectid import ObjectId
 
 import os
 import pymongo
-import sqlite3
 import sys
 import traceback
 import Database
