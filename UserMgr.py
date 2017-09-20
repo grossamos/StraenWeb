@@ -98,4 +98,4 @@ class UserMgr(object):
             return False, "No database."
         if name is None or len(name) == 0:
             return False, "Bad parameter."
-        return self.db.retrieve_matched_users(self, name)
+        return self.db.retrieve_matched_users(name)

@@ -85,6 +85,26 @@ class MongoDatabase(Database.Database):
             self.log_error(sys.exc_info()[0])
         return None, None, None
 
+    def retrieve_matched_users(self, username):
+        list = []
+
+        if username is None:
+            self.log_error(MongoDatabase.retrieve_matched_users.__name__ + "Unexpected empty object: username")
+            return list
+        if len(username) == 0:
+            self.log_error(MongoDatabase.retrieve_matched_users.__name__ + "username is empty")
+            return list
+
+        try:
+            matched_users = self.users_collection.find({"username": "*" + username + "*"})
+            print matched_users
+            for matched_user in matched_users:
+                print matched_user
+        except:
+            traceback.print_exc(file=sys.stdout)
+            self.log_error(sys.exc_info()[0])
+        return list
+
     def create_user_device(self, user_id, device_str):
         if username is None:
             self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: username")

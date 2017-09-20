@@ -625,6 +625,18 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
         return self.error()
 
+    # Processes a search user request.
+    @cherrypy.expose
+    def submit_user_search(self, *args, **kw):
+        try:
+            user = cherrypy.request.params.get("searchname")
+            matched_users = self.user_mgr.retrieve_matched_users(user)
+            for matched_user in matched_users:
+                pass
+        except:
+            cherrypy.log.error('Unhandled exception in user_search', 'EXEC', logging.WARNING)
+        return self.error()
+
     # Processes a login.
     @cherrypy.expose
     def submit_login(self, *args, **kw):
@@ -642,14 +654,12 @@ class StraenWeb(object):
                     cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
                     result = self.all_activities(email, None, None)
                 else:
-                    my_template = Template(filename=g_error_html_file,
-                                           module_directory=g_tempmod_dir)
+                    my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
                     error_msg = "Unable to authenticate the user."
                     if len(info_str) > 0:
                         error_msg += " "
                         error_msg += info_str
-                    result = my_template.render(
-                        product=g_product_name, root_url=g_root_url, error=error_msg)
+                    result = my_template.render(product=g_product_name, root_url=g_root_url, error=error_msg)
             return result
         except:
             cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
