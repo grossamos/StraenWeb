@@ -86,14 +86,14 @@ class MongoDatabase(Database.Database):
         return None, None, None
 
     def retrieve_matched_users(self, username):
-        list = []
+        user_list = []
 
         if username is None:
             self.log_error(MongoDatabase.retrieve_matched_users.__name__ + "Unexpected empty object: username")
-            return list
+            return user_list
         if len(username) == 0:
             self.log_error(MongoDatabase.retrieve_matched_users.__name__ + "username is empty")
-            return list
+            return user_list
 
         try:
             matched_users = self.users_collection.find({"username": "*" + username + "*"})
@@ -103,14 +103,11 @@ class MongoDatabase(Database.Database):
         except:
             traceback.print_exc(file=sys.stdout)
             self.log_error(sys.exc_info()[0])
-        return list
+        return user_list
 
     def create_user_device(self, user_id, device_str):
-        if username is None:
-            self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: username")
-            return False
-        if len(username) == 0:
-            self.log_error(MongoDatabase.create_user_device.__name__ + "username is empty")
+        if user_id is None:
+            self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: user_id")
             return False
         if device_str is None:
             self.log_error(MongoDatabase.create_user_device.__name__ + "Unexpected empty object: device_str")
@@ -191,12 +188,12 @@ class MongoDatabase(Database.Database):
             user_id_obj = ObjectId(user_id)
             user = self.users_collection.find_one({"_id": user_id_obj})
             if user is not None:
-                list = []
+                user_list = []
                 if 'following' in user:
-                    list = user['following']
-                if following_name not in list:
-                    list.append(following_name)
-                    user['following'] = list
+                    user_list = user['following']
+                if following_name not in user_list:
+                    user_list.append(following_name)
+                    user['following'] = user_list
                     self.users_collection.save(user)
         except:
             traceback.print_exc(file=sys.stdout)
@@ -215,36 +212,12 @@ class MongoDatabase(Database.Database):
             user_id_obj = ObjectId(user_id)
             user = self.users_collection.find_one({"_id": user_id_obj})
             if user is not None:
-                list = []
+                user_list = []
                 if 'follower' in user:
-                    list = user['follower']
-                if follower_name not in list:
-                    list.append(follower_name)
-                    user['follower'] = list
-                    self.users_collection.save(user)
-        except:
-            traceback.print_exc(file=sys.stdout)
-            self.log_error(sys.exc_info()[0])
-        return False
-
-    def create_device(self, device_str, user_id):
-        if device_str is None:
-            self.log_error(MongoDatabase.create_device.__name__ + "Unexpected empty object: device_str")
-            return False
-        if user_id is None:
-            self.log_error(MongoDatabase.create_device.__name__ + "Unexpected empty object: user_id")
-            return False
-
-        try:
-            user_id_obj = ObjectId(user_id)
-            user = self.users_collection.find_one({"_id": user_id_obj})
-            if user is not None:
-                list = []
-                if 'devices' in user:
-                    list = user['devices']
-                if device_str not in list:
-                    list.append(device_str)
-                    user['devices'] = list
+                    user_list = user['follower']
+                if follower_name not in user_list:
+                    user_list.append(follower_name)
+                    user['follower'] = user_list
                     self.users_collection.save(user)
         except:
             traceback.print_exc(file=sys.stdout)
@@ -509,12 +482,12 @@ class MongoDatabase(Database.Database):
                 if self.create_activity(activity_id, "", device_str):
                     activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
             if activity is not None:
-                list = []
+                location_list = []
                 if 'locations' in activity:
-                    list = activity['locations']
+                    location_list = activity['locations']
                 value = {"time": date_time, "latitude": latitude, "longitude": longitude, "altitude": altitude}
-                list.append(value)
-                activity['locations'] = list
+                location_list.append(value)
+                activity['locations'] = location_list
                 self.activities_collection.save(activity)
         except:
             traceback.print_exc(file=sys.stdout)

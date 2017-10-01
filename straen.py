@@ -21,18 +21,18 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 
+ACCESS_LOG = 'access.log'
+ERROR_LOG = 'error.log'
+PRODUCT_NAME = 'Straen'
+SESSION_KEY = '_cp_username'
+
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
-g_root_url = 'http://straen-app.com/live'
-g_access_log = 'access.log'
-g_error_log = 'error.log'
-g_product_name = 'Straen'
+g_root_url = 'http://straen-app.com/live/'
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
 g_error_logged_in_html_file = os.path.join(g_root_dir, 'html', 'error_logged_in.html')
 g_app = None
-
-SESSION_KEY = '_cp_username'
 
 NAME_KEY = "Name"
 TIME_KEY = "Time"
@@ -225,6 +225,56 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in update_metadata', 'EXEC', logging.WARNING)
         return ""
 
+    # Login - called from the app.
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    @cherrypy.expose
+    def login_submit(self, **kw):
+        try:
+            email = cherrypy.request.json["username"]
+            password = cherrypy.request.json["password"]
+            device_str = cherrypy.request.json["device"]
+
+            response = "["
+
+            if email is None or password is None:
+                response += "\"error\": \"An email address and password were not provided.\""
+            else:
+                user_logged_in, info_str = self.user_mgr.authenticate_user(email, password)
+                if user_logged_in:
+                    self.user_mgr.create_user_device(email, device_str)
+                else:
+                    response += "\"error\": \"" + info_str + "\""
+
+            response += "]"
+            return response
+        except:
+            cherrypy.log.error('Unhandled exception in login_submit', 'EXEC', logging.WARNING)
+        return ""
+
+    # Creates a new login - called from the app.
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    @cherrypy.expose
+    def create_login_submit(self, **kw):
+        try:
+            email = cherrypy.request.json["username"]
+            password1 = cherrypy.request.json["password1"]
+            password2 = cherrypy.request.json["password2"]
+            realname = cherrypy.request.json["realname"]
+            device_str = cherrypy.request.json["device"]
+
+            response = "["
+            user_created, info_str = self.user_mgr.create_user(email, realname, password1, password2, device_str)
+            if user_created:
+                response += "\"error\": \"" + info_str + "\""
+            response += "]"
+            return response
+        except:
+            cherrypy.log.error('Unhandled exception in create_login_submit', 'EXEC', logging.WARNING)
+        return ""
+
+    # Lists users followed by the logged in user - called from the app.
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def list_users_followed(self, email=None, *args, **kw):
@@ -246,9 +296,10 @@ class StraenWeb(object):
 
             return response
         except:
-            cherrypy.log.error('Unhandled exception in list_users_following', 'EXEC', logging.WARNING)
+            cherrypy.log.error('Unhandled exception in list_users_followed', 'EXEC', logging.WARNING)
         return ""
 
+    # Lists users following the logged in user - called from the app.
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def list_followers(self, email=None, *args, **kw):
@@ -270,7 +321,7 @@ class StraenWeb(object):
 
             return response
         except:
-            cherrypy.log.error('Unhandled exception in list_users_followed_by', 'EXEC', logging.WARNING)
+            cherrypy.log.error('Unhandled exception in list_followers', 'EXEC', logging.WARNING)
         return ""
 
     @cherrypy.expose
@@ -292,8 +343,9 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 
     # Helper function for building the navigation bar.
-    def create_navbar(self, email):
-        str = "<nav>\n" \
+    @staticmethod
+    def create_navbar(email):
+        navbar_str = "<nav>\n" \
             "\t<ul>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/my_activities/" + email + "\">My Activities</a></li>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/all_activities/" + email + "\">All Activities</a></li>\n" \
@@ -302,18 +354,18 @@ class StraenWeb(object):
             "\t\t<li><a href=\"" + g_root_url + "/device_list/" + email + "\">Devices</a></li>\n" \
             "\t</ul>\n" \
             "</nav>"
-        return str
+        return navbar_str
 
     # Helper function for rendering the map corresonding to a specific device and activity.
     def render_page_for_activity(self, email, user_realname, device_str, activity_id):
         if device_str is None:
             my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
-            return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
+            return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="There is no data for the specified device.")
 
         locations = self.data_mgr.retrieve_locations(device_str, activity_id)
         if locations is None or len(locations) == 0:
             my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
-            return my_template.render(product=g_product_name, root_url=g_root_url, error="There is no data for the specified device.")
+            return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="There is no data for the specified device.")
 
         route = ""
         center_lat = 0
@@ -323,14 +375,14 @@ class StraenWeb(object):
 
         for location in locations:
             route += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location['longitude']) + "),\n"
-            lastLoc = location
+            last_loc = location
 
         if len(locations) > 0:
             first_loc = locations[0]
             center_lat = first_loc['latitude']
             center_lon = first_loc['longitude']
-            last_lat = lastLoc['latitude']
-            last_lon = lastLoc['longitude']
+            last_lat = last_loc['latitude']
+            last_lon = last_loc['longitude']
 
         current_speeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, device_str, activity_id)
         current_speeds_str = ""
@@ -365,13 +417,13 @@ class StraenWeb(object):
                 powers_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-        return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
+        return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
 
     # Helper function for rendering the map corresonding to a multiple devices.
     def render_page_for_multiple_devices(self, email, user_realname, device_strs, user_id):
         if device_strs is None:
             my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
-            return my_template.render(product=g_product_name, root_url=g_root_url, error="No device IDs were specified.")
+            return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="No device IDs were specified.")
 
         route_coordinates = ""
         center_lat = 0
@@ -391,7 +443,7 @@ class StraenWeb(object):
             route_coordinates += "\t\t\tvar routeCoordinates" + str(device_index) + " = \n\t\t\t[\n"
             for location in locations:
                 route_coordinates += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location[']longitude']) + "),\n"
-                lastLoc = location
+                last_loc = location
             route_coordinates += "\t\t\t];\n"
             route_coordinates += "\t\t\taddRoute(routeCoordinates" + str(device_index) + ");\n\n"
 
@@ -399,11 +451,11 @@ class StraenWeb(object):
                 first_loc = locations[0]
                 center_lat = first_loc['latitude']
                 center_lon = first_loc['longitude']
-                last_lat = lastLoc['latitude']
-                last_lon = lastLoc['longitude']
+                last_lat = last_loc['latitude']
+                last_lon = last_loc['longitude']
 
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
-        return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
+        return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 
     # Helper function for creating a table row describing an activity
     def render_activity_row(self, user_realname, activity, row_id):
@@ -426,25 +478,26 @@ class StraenWeb(object):
             row += "Untitled"
         row += "</a></td>"
         row += "<td>"
-        checkboxValue = "checked"
-        checkboxLabel = "Public"
+        checkbox_value = "checked"
+        checkbox_label = "Public"
         if 'visibility' in activity:
             if activity['visibility'] == "private":
-                checkboxValue = "unchecked"
-                checkboxLabel = "Private"
+                checkbox_value = "unchecked"
+                checkbox_label = "Private"
         row += "<div>\n"
-        row += "\t<input type=\"checkbox\" value=\"\" " + checkboxValue + " id=\"" + \
+        row += "\t<input type=\"checkbox\" value=\"\" " + checkbox_value + " id=\"" + \
                     str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + \
                     activity['device_str'] + "\", " + \
                     activity['activity_id'] + ")';>"
-        row += "<span>" + checkboxLabel + "</span></label>"
+        row += "<span>" + checkbox_label + "</span></label>"
         row += "</div>\n"
         row += "</td>"
         row += "</tr>\n"
         return row
 
     # Helper function for creating a table row describing a user
-    def render_user_row(self, user):
+    @staticmethod
+    def render_user_row(user):
         row = "<tr>"
         row += "<td>"
         row += user
@@ -464,22 +517,20 @@ class StraenWeb(object):
 
     # Renders the errorpage.
     @cherrypy.expose
-    def error(self, str=None):
+    def error(self, error_str=None):
         try:
             cherrypy.response.status = 500
             my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-            if str is None:
-                str = "Internal Error."
+            if error_str is None:
+                error_str = "Internal Error."
         except:
             pass
-        return my_template.render(product=g_product_name, root_url=g_root_url, error=str)
+        return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_str)
 
     # Renders the map page for the current activity from a single device.
     @cherrypy.expose
-    def live(self, device_str, str=None):
+    def live(self, device_str):
         try:
-            result = False
-
             activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
             if activity_id is None:
                 return self.error()
@@ -494,8 +545,6 @@ class StraenWeb(object):
     @require()
     def device(self, device_str, *args, **kw):
         try:
-            result = False
-
             activity_id_str = cherrypy.request.params.get("activity_id")
             if activity_id_str is None:
                 activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
@@ -526,7 +575,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
         except:
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
         return self.error()
@@ -546,7 +595,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
         except:
             cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
         return self.error()
@@ -564,7 +613,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
             html_file = os.path.join(g_root_dir, 'html', 'following.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
         except:
             cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
         return self.error()
@@ -582,7 +631,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
             html_file = os.path.join(g_root_dir, 'html', 'followers.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
         except:
             cherrypy.log.error('Unhandled exception in followers', 'EXEC', logging.WARNING)
         return self.error()
@@ -605,7 +654,7 @@ class StraenWeb(object):
                     device_list_str += "</tr>\n"
             html_file = os.path.join(g_root_dir, 'html', 'device_list.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=g_product_name, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
         except:
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
@@ -619,7 +668,7 @@ class StraenWeb(object):
                 result = ""
             else:
                 my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-                result = my_template.render(product=g_product_name, root_url=g_root_url, error="Unable to process the request.")
+                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="Unable to process the request.")
             return result
         except:
             cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
@@ -646,7 +695,7 @@ class StraenWeb(object):
 
             if email is None or password is None:
                 my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-                result = my_template.render(product=g_product_name, root_url=g_root_url, error="An email address and password were not provided.")
+                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="An email address and password were not provided.")
             else:
                 user_logged_in, info_str = self.user_mgr.authenticate_user(email, password)
                 if user_logged_in:
@@ -659,7 +708,7 @@ class StraenWeb(object):
                     if len(info_str) > 0:
                         error_msg += " "
                         error_msg += info_str
-                    result = my_template.render(product=g_product_name, root_url=g_root_url, error=error_msg)
+                    result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_msg)
             return result
         except:
             cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
@@ -680,7 +729,7 @@ class StraenWeb(object):
                 if len(info_str) > 0:
                     error_msg += " "
                     error_msg += info_str
-                result = my_template.render(product=g_product_name, root_url=g_root_url, error=error_msg)
+                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_msg)
             return result
         except:
             cherrypy.log.error('Unhandled exception in submit_new_login', 'EXEC', logging.WARNING)
@@ -692,7 +741,7 @@ class StraenWeb(object):
         try:
             login_html_file = os.path.join(g_root_dir, 'html', 'login.html')
             my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
-            result = my_template.render(product=g_product_name, root_url=g_root_url)
+            result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
             result = self.error()
         return result
@@ -703,7 +752,7 @@ class StraenWeb(object):
         try:
             create_login_html_file = os.path.join(g_root_dir, 'html', 'create_login.html')
             my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
-            result = my_template.render(product=g_product_name, root_url=g_root_url)
+            result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
             result = self.error()
         return result
@@ -714,7 +763,7 @@ class StraenWeb(object):
         try:
             about_html_file = os.path.join(g_root_dir, 'html', 'about.html')
             my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
-            result = my_template.render(product=g_product_name, root_url=g_root_url)
+            result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
             result = self.error()
         return result
@@ -774,7 +823,7 @@ conf = {
 cherrypy.config.update({
     'server.socket_host': '127.0.0.1',
     'requests.show_tracebacks': False,
-    'log.access_file': g_access_log,
-    'log.error_file': g_error_log})
+    'log.access_file': ACCESS_LOG,
+    'log.error_file': ERROR_LOG})
 
 cherrypy.quickstart(g_app, config=conf)

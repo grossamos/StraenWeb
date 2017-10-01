@@ -52,9 +52,20 @@ class UserMgr(object):
 
         if len(device_str) > 0:
             user_id, user_hash, user_realname = self.db.retrieve_user(email)
-            self.db.create_device(device_str, user_id)
+            self.db.create_user_device(user_id, device_str)
         
         return True, "The user was created."
+
+    def create_user_device(self, email, device_str):
+        if self.db is None:
+            return False, "No database."
+        if len(email) == 0:
+            return False, "Email address not provided."
+        if len(device_str) == 0:
+            return False, "Device string not provided."
+
+        user_id, db_hash1, user_name = self.db.retrieve_user(email)
+        self.db.create_user_device(user_id, device_str)
 
     def list_user_devices(self, user_id):
         if self.db is None:
