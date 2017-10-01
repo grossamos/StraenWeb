@@ -16,7 +16,7 @@ class UserMgr(object):
         self.db = None
 
     def authenticate_user(self, email, password):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if len(email) == 0:
             return False, "An email address was not provided."
@@ -24,7 +24,7 @@ class UserMgr(object):
             return False, "The password is too short."
 
         user_id, db_hash1, user_name = self.db.retrieve_user(email)
-        if db_hash1 == None:
+        if db_hash1 is None:
             return False, "The user could not be found."
         db_hash2 = bcrypt.hashpw(password.encode('utf-8'), db_hash1.encode('utf-8'))
         if db_hash1 == db_hash2:
@@ -32,7 +32,7 @@ class UserMgr(object):
         return False, "The password is invalid."
 
     def create_user(self, email, realname, password1, password2, device_str):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if len(email) == 0:
             return False, "Email address not provided."
@@ -42,7 +42,7 @@ class UserMgr(object):
             return False, "The password is too short."
         if password1 != password2:
             return False, "The passwords do not match."
-        if self.db.retrieve_user(email) == None:
+        if self.db.retrieve_user(email) is None:
             return False, "The user already exists."
 
         salt = bcrypt.gensalt()
@@ -57,28 +57,28 @@ class UserMgr(object):
         return True, "The user was created."
 
     def list_user_devices(self, user_id):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if user_id is None or len(user_id) == 0:
             return False, "Bad parameter."
         return self.db.retrieve_user_devices(user_id)
 
     def list_users_followed(self, user_id):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if user_id is None or len(user_id) == 0:
             return False, "Bad parameter."
         return self.db.retrieve_users_followed(user_id)
 
     def list_followers(self, user_id):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if user_id is None or len(user_id) == 0:
             return False, "Bad parameter."
         return self.db.retrieve_followers(user_id)
 
     def request_to_follow(self, email, following_name):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if email is None or len(email) == 0:
             return False, "Bad parameter."
@@ -87,14 +87,14 @@ class UserMgr(object):
         return self.db.create_following_entry(email, following_name)
 
     def retrieve_user(self, email):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if email is None or len(email) == 0:
             return False, "Bad parameter."
         return self.db.retrieve_user(email)
 
     def retrieve_matched_users(self, name):
-        if self.db == None:
+        if self.db is None:
             return False, "No database."
         if name is None or len(name) == 0:
             return False, "Bad parameter."
