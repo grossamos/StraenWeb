@@ -27,7 +27,7 @@ PRODUCT_NAME = 'Straen'
 SESSION_KEY = '_cp_username'
 
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
-g_root_url = 'http://straen-app.com/live/'
+g_root_url = 'http://straen-app.com/'
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
@@ -347,11 +347,11 @@ class StraenWeb(object):
     def create_navbar(email):
         navbar_str = "<nav>\n" \
             "\t<ul>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/my_activities/" + email + "\">My Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/all_activities/" + email + "\">All Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/following/" + email + "\">Following</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/followers/" + email + "\">Followers</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/device_list/" + email + "\">Devices</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "my_activities/" + email + "\">My Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "all_activities/" + email + "\">All Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "following/" + email + "\">Following</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "followers/" + email + "\">Followers</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "device_list/" + email + "\">Devices</a></li>\n" \
             "\t</ul>\n" \
             "</nav>"
         return navbar_str
@@ -781,7 +781,7 @@ for arg in sys.argv:
         debug = True
 
 if debug:
-    g_root_url = ""
+    g_root_url = "http://127.0.0.1:8080/"
 else:
     Daemonizer(cherrypy.engine).subscribe()
 
