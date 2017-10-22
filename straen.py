@@ -570,8 +570,7 @@ class StraenWeb(object):
             row_id = 0
             if activities is not None and isinstance(activities, list):
                 for activity in activities:
-                    activities_list_str += self.render_activity_row(
-                        user_realname, activity, row_id)
+                    activities_list_str += self.render_activity_row(None, activity, row_id)
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
@@ -591,7 +590,7 @@ class StraenWeb(object):
             row_id = 0
             if activities is not None and isinstance(activities, list):
                 for activity in activities:
-                    activities_list_str += self.render_activity_row(None, activity, row_id)
+                    activities_list_str += self.render_activity_row(user_realname, activity, row_id)
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
