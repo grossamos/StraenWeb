@@ -348,11 +348,12 @@ class StraenWeb(object):
     def create_navbar(email):
         navbar_str = "<nav>\n" \
             "\t<ul>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "my_activities/" + email + "\">My Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "all_activities/" + email + "\">All Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "following/" + email + "\">Following</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "followers/" + email + "\">Followers</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "device_list/" + email + "\">Devices</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/my_activities/" + email + "\">My Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/all_activities/" + email + "\">All Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/following/" + email + "\">Following</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/followers/" + email + "\">Followers</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/device_list/" + email + "\">Devices</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/settings/" + email + "\">Settings</a></li>\n" \
             "\t</ul>\n" \
             "</nav>"
         return navbar_str
@@ -657,6 +658,19 @@ class StraenWeb(object):
             return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
         except:
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
+        return self.error()
+
+    # Renders the list of a user's devices.
+    @cherrypy.expose
+    @require()
+    def settings(self, email, *args, **kw):
+        try:
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            html_file = os.path.join(g_root_dir, 'html', 'settings.html')
+            my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname)
+        except:
+            cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
         return self.error()
 
     # Renders the page for inviting someone to follow.
