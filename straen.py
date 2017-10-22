@@ -1,5 +1,6 @@
 # Copyright 2017 Michael J Simms
 
+import argparse
 import cherrypy
 import datetime
 import json
@@ -27,7 +28,7 @@ PRODUCT_NAME = 'Straen'
 SESSION_KEY = '_cp_username'
 
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
-g_root_url = 'http://straen-app.com/'
+g_root_url = 'http://straen-app.com'
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
@@ -773,14 +774,18 @@ class StraenWeb(object):
         return self.login()
 
 
-debug = False
+# Parse command line options.
+parser = argparse.ArgumentParser()
+parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
 
-for arg in sys.argv:
-    if arg == 'debug' or arg == '--debug':
-        debug = True
+try:
+    args = parser.parse_args()
+except IOError as e:
+    parser.error(e)
+    sys.exit(1)
 
-if debug:
-    g_root_url = "http://127.0.0.1:8080/"
+if args.debug:
+    g_root_url = "http://127.0.0.1:8080"
 else:
     Daemonizer(cherrypy.engine).subscribe()
 
