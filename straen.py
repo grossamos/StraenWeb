@@ -353,6 +353,7 @@ class StraenWeb(object):
             "\t\t<li><a href=\"" + g_root_url + "/following/" + email + "\">Following</a></li>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/followers/" + email + "\">Followers</a></li>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/device_list/" + email + "\">Devices</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/import_activity/" + email + "\">Import</a></li>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/settings/" + email + "\">Settings</a></li>\n" \
             "\t</ul>\n" \
             "</nav>"
@@ -660,7 +661,20 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of a user's devices.
+    # Renders the import page.
+    @cherrypy.expose
+    @require()
+    def import_activity(self, email, *args, **kw):
+        try:
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            html_file = os.path.join(g_root_dir, 'html', 'import.html')
+            my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname)
+        except:
+            cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
+        return self.error()
+
+    # Renders the user's settings page.
     @cherrypy.expose
     @require()
     def settings(self, email, *args, **kw):
