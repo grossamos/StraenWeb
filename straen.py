@@ -814,7 +814,10 @@ except IOError as e:
     sys.exit(1)
 
 if args.debug:
-    g_root_url = "http://127.0.0.1:8080"
+    if args.https:
+        g_root_url = "https://127.0.0.1:8080"
+    else:
+        g_root_url = "http://127.0.0.1:8080"
 else:
     Daemonizer(cherrypy.engine).subscribe()
 
