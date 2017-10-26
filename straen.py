@@ -805,6 +805,7 @@ class StraenWeb(object):
 # Parse command line options.
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
+parser.add_argument("--https", action="store_true", default=False, help="", required=False)
 
 try:
     args = parser.parse_args()
@@ -816,6 +817,11 @@ if args.debug:
     g_root_url = "http://127.0.0.1:8080"
 else:
     Daemonizer(cherrypy.engine).subscribe()
+
+if args.https:
+    cherrypy.server.ssl_module = 'builtin'
+    cherrypy.server.ssl_certificate = "cert.pem"
+    cherrypy.server.ssl_private_key = "privkey.pem"
 
 signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
