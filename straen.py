@@ -806,6 +806,8 @@ class StraenWeb(object):
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", default=False, help="", required=False)
 parser.add_argument("--https", action="store_true", default=False, help="", required=False)
+parser.add_argument("--cert", default="", help="cert.pem", required=False)
+parser.add_argument("--privkey", default="", help="privkey.pem", required=False)
 
 try:
     args = parser.parse_args()
@@ -823,8 +825,8 @@ else:
 
 if args.https:
     cherrypy.server.ssl_module = 'builtin'
-    cherrypy.server.ssl_certificate = "cert.pem"
-    cherrypy.server.ssl_private_key = "privkey.pem"
+    cherrypy.server.ssl_certificate = args.cert
+    cherrypy.server.ssl_private_key = args.privkey
 
 signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
