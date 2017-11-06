@@ -3,6 +3,7 @@
 import argparse
 import cherrypy
 import datetime
+import gpxpy
 import json
 import logging
 import mako
@@ -338,8 +339,7 @@ class StraenWeb(object):
             else:
                 new_visibility = "private"
 
-            self.data_mgr.update_activity_visibility(
-                device_str, int(activity_id), new_visibility)
+            self.data_mgr.update_activity_visibility(device_str, int(activity_id), new_visibility)
         except:
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 
@@ -659,6 +659,28 @@ class StraenWeb(object):
             return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
         except:
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
+        return self.error()
+
+    # Processes an upload request.
+    @cherrypy.expose
+    def upload(self, ufile):
+        try:
+            upload_path = os.path.normpath('/temp/upload/')
+            upload_file = os.path.join(upload_path, ufile.filename)
+            gpx_file = open(upload_file, 'r')
+            gpx = gpxpy.parse(gpx_file)
+
+            lat = []
+            lon = []
+
+            for track in gpx.tracks:
+                for segment in track.segments:
+                    for point in segment.points:
+                        lat.append(point.latitude)
+                        lon.append(point.longitude)
+
+        except:
+            cherrypy.log.error('Unhandled exception in upload', 'EXEC', logging.WARNING)
         return self.error()
 
     # Renders the import page.
