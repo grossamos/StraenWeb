@@ -883,6 +883,11 @@ conf = {
         'tools.staticdir.on': True,
         'tools.staticdir.dir': 'media',
     },
+    '/.well-known':
+    {
+        'tools.staticdir.on': True,
+        'tools.staticdir.dir': '.well-known',
+    },
 }
 
 cherrypy.config.update({
