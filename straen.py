@@ -26,7 +26,7 @@ from mako.template import Template
 ACCESS_LOG = 'access.log'
 ERROR_LOG = 'error.log'
 PRODUCT_NAME = 'Straen'
-SESSION_KEY = '_cp_username'
+SESSION_KEY = '_straen_username'
 
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_url = 'http://straen-app.com'
