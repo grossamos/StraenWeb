@@ -843,6 +843,11 @@ if args.debug:
     else:
         g_root_url = "http://127.0.0.1:8080"
 else:
+    if args.https:
+        g_root_url = 'https://straen-app.com'
+    else:
+        g_root_url = 'http://straen-app.com'
+
     Daemonizer(cherrypy.engine).subscribe()
 
 if args.https:
