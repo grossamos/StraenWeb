@@ -97,9 +97,9 @@ class MongoDatabase(Database.Database):
 
         try:
             matched_users = self.users_collection.find({"username": "*" + username + "*"})
-            print matched_users
-            for matched_user in matched_users:
-                print matched_user
+            if matched_users is not None:
+                for matched_user in matched_users:
+                    print matched_user
         except:
             traceback.print_exc(file=sys.stdout)
             self.log_error(sys.exc_info()[0])
@@ -357,8 +357,7 @@ class MongoDatabase(Database.Database):
             return False
 
         try:
-            activity = self.activities_collection.find_one(
-                {"activity_id": str(activity_id), "device_str": device_str})
+            activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
             if len(activity) == 0:
                 if self.create_activity(activity_id, "", device_str):
                     activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
@@ -417,8 +416,7 @@ class MongoDatabase(Database.Database):
             return False
 
         try:
-            activity = self.activities_collection.find_one(
-                {"activity_id": str(activity_id), "device_str": device_str})
+            activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
             if len(activity) == 0:
                 if self.create_activity(activity_id, "", device_str):
                     activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})
@@ -476,8 +474,7 @@ class MongoDatabase(Database.Database):
             return False
 
         try:
-            activity = self.activities_collection.find_one(
-                {"activity_id": str(activity_id), "device_str": device_str})
+            activity = self.activities_collection.find_one({"activity_id": str(activity_id), "device_str": device_str})
             if activity is None:
                 if self.create_activity(activity_id, "", device_str):
                     activity = self.activities_collection.find_one({"device_id": device_str, "activity_id": str(activity_id)})

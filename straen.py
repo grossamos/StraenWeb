@@ -726,6 +726,7 @@ class StraenWeb(object):
 
     # Processes a search user request.
     @cherrypy.expose
+    @require()
     def submit_user_search(self, *args, **kw):
         try:
             user = cherrypy.request.params.get("searchname")
@@ -733,7 +734,7 @@ class StraenWeb(object):
             for matched_user in matched_users:
                 pass
         except:
-            cherrypy.log.error('Unhandled exception in user_search', 'EXEC', logging.WARNING)
+            cherrypy.log.error('Unhandled exception in submit_user_search', 'EXEC', logging.WARNING)
         return self.error()
 
     # Processes a login.
