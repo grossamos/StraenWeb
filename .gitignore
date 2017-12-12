@@ -31,3 +31,6 @@ tempmod/*
 # Log files
 *.log
 
+# Temp directories
+tempfile/
+tempmod/
