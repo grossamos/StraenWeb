@@ -10,8 +10,10 @@ import mako
 import os
 import re
 import signal
+import shutil
 import sys
 import traceback
+import uuid
 
 import DataMgr
 import UserMgr
@@ -30,6 +32,7 @@ SESSION_KEY = '_straen_username'
 
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_url = 'http://straen-app.com'
+g_tempfile_dir = os.path.join(g_root_dir, 'tempfile')
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
@@ -345,16 +348,16 @@ class StraenWeb(object):
 
     # Helper function for building the navigation bar.
     @staticmethod
-    def create_navbar(email):
+    def create_navbar(username):
         navbar_str = "<nav>\n" \
             "\t<ul>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/my_activities/" + email + "\">My Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/all_activities/" + email + "\">All Activities</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/following/" + email + "\">Following</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/followers/" + email + "\">Followers</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/device_list/" + email + "\">Devices</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/import_activity/" + email + "\">Import</a></li>\n" \
-            "\t\t<li><a href=\"" + g_root_url + "/settings/" + email + "\">Settings</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/my_activities/\">My Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/all_activities/\">All Activities</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/following/\">Following</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/followers/\">Followers</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/device_list/\">Devices</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/import_activity/\">Import</a></li>\n" \
+            "\t\t<li><a href=\"" + g_root_url + "/settings/\">Settings</a></li>\n" \
             "\t</ul>\n" \
             "</nav>"
         return navbar_str
@@ -460,7 +463,7 @@ class StraenWeb(object):
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
         return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 
-    # Helper function for creating a table row describing an activity
+    # Helper function for creating a table row describing an activity.
     def render_activity_row(self, user_realname, activity, row_id):
         row = "<tr>"
         row += "<td>"
@@ -498,7 +501,7 @@ class StraenWeb(object):
         row += "</tr>\n"
         return row
 
-    # Helper function for creating a table row describing a user
+    # Helper function for creating a table row describing a user.
     @staticmethod
     def render_user_row(user):
         row = "<tr>"
@@ -565,9 +568,10 @@ class StraenWeb(object):
     # Renders the list of the specified user's activities.
     @cherrypy.expose
     @require()
-    def my_activities(self, email, *args, **kw):
+    def my_activities(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
             row_id = 0
@@ -577,7 +581,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, activities_list=activities_list_str)
         except:
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
         return self.error()
@@ -585,9 +589,10 @@ class StraenWeb(object):
     # Renders the list of all activities the specified user is allowed to view.
     @cherrypy.expose
     @require()
-    def all_activities(self, email, *args, **kw):
+    def all_activities(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
             row_id = 0
@@ -597,7 +602,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
             html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, activities_list=activities_list_str)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, activities_list=activities_list_str)
         except:
             cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
         return self.error()
@@ -605,9 +610,10 @@ class StraenWeb(object):
     # Renders the list of users the specified user is following.
     @cherrypy.expose
     @require()
-    def following(self, email, *args, **kw):
+    def following(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             users_following = self.user_mgr.list_users_followed(user_id)
             users_list_str = ""
             if users_following is not None and isinstance(users_following, list):
@@ -615,7 +621,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
             html_file = os.path.join(g_root_dir, 'html', 'following.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
         except:
             cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
         return self.error()
@@ -623,8 +629,9 @@ class StraenWeb(object):
     # Renders the list of users that are following the specified user.
     @cherrypy.expose
     @require()
-    def followers(self, email, *args, **kw):
+    def followers(self, *args, **kw):
         try:
+            username = cherrypy.session.get(SESSION_KEY)
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
             users_followed_by = self.user_mgr.list_followers(user_id)
             users_list_str = ""
@@ -633,7 +640,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
             html_file = os.path.join(g_root_dir, 'html', 'followers.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, users_list=users_list_str)
+            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
         except:
             cherrypy.log.error('Unhandled exception in followers', 'EXEC', logging.WARNING)
         return self.error()
@@ -641,9 +648,10 @@ class StraenWeb(object):
     # Renders the list of a user's devices.
     @cherrypy.expose
     @require()
-    def device_list(self, email, *args, **kw):
+    def device_list(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             devices = self.user_mgr.list_user_devices(user_id)
             device_list_str = ""
             if devices is not None and isinstance(devices, list):
@@ -656,18 +664,13 @@ class StraenWeb(object):
                     device_list_str += "</tr>\n"
             html_file = os.path.join(g_root_dir, 'html', 'device_list.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, device_list=device_list_str)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, device_list=device_list_str)
         except:
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Processes an upload request.
-    @cherrypy.expose
-    def upload(self, ufile):
-        try:
-            upload_path = os.path.normpath('/temp/upload/')
-            upload_file = os.path.join(upload_path, ufile.filename)
-            gpx_file = open(upload_file, 'r')
+    def import_gpx_file(username, uploaded_file_name):
+        with open(uploaded_file_name, 'r') as gpx_file:
             gpx = gpxpy.parse(gpx_file)
 
             lat = []
@@ -679,6 +682,40 @@ class StraenWeb(object):
                         lat.append(point.latitude)
                         lon.append(point.longitude)
 
+            print lat
+            print lon
+
+    def import_tcx_file(username, uploaded_file_name):
+        pass
+    
+    # Processes an upload request.
+    @cherrypy.expose
+    def upload(self, ufile):
+        try:
+            # Get the username from the session key.
+            username = cherrypy.session.get(SESSION_KEY)
+
+            # Generate a random name for the local file.
+            upload_path = os.path.normpath(g_tempfile_dir)
+            uploaded_file_ext = os.path.splitext(ufile.filename)
+            uploaded_file_name = os.path.join(upload_path, str(uuid.uuid4()), uploaded_file_ext)
+
+            # Write the file.
+            with open(uploaded_file_name, 'wb') as saved_file:
+                shutil.copyfileobj(cherrypy.request.body, saved_file)
+
+            # Parse the file.
+            try:
+                if uploaded_file_ext == '.gpx':
+                    self.import_gpx_file(username, uploaded_file_name)
+                elif uploaded_file_ext == '.tcx':
+                    self.import_gpx_file(username, uploaded_file_name)
+            except:
+                pass
+
+            # Remove the local file.
+            os.remove(uploaded_file_name)
+
         except:
             cherrypy.log.error('Unhandled exception in upload', 'EXEC', logging.WARNING)
         return self.error()
@@ -686,12 +723,13 @@ class StraenWeb(object):
     # Renders the import page.
     @cherrypy.expose
     @require()
-    def import_activity(self, email, *args, **kw):
+    def import_activity(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             html_file = os.path.join(g_root_dir, 'html', 'import.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname)
         except:
             cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
         return self.error()
@@ -699,12 +737,13 @@ class StraenWeb(object):
     # Renders the user's settings page.
     @cherrypy.expose
     @require()
-    def settings(self, email, *args, **kw):
+    def settings(self, *args, **kw):
         try:
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            username = cherrypy.session.get(SESSION_KEY)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             html_file = os.path.join(g_root_dir, 'html', 'settings.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname)
         except:
             cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
         return self.error()
@@ -714,7 +753,8 @@ class StraenWeb(object):
     @require()
     def request_to_follow(self, email, target_email, *args, **kw):
         try:
-            if self.user_mgr.request_to_follow(email, target_email):
+            username = cherrypy.session.get(SESSION_KEY)
+            if self.user_mgr.request_to_follow(username, target_email):
                 result = ""
             else:
                 my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
@@ -862,6 +902,9 @@ if args.https:
 signal.signal(signal.SIGINT, signal_handler)
 mako.collection_size = 100
 mako.directories = "templates"
+
+if not os.path.exists(g_tempfile_dir):
+    os.makedirs(g_tempfile_dir)
 
 user_mgr = UserMgr.UserMgr(g_root_dir)
 data_mgr = DataMgr.DataMgr(g_root_dir)
