@@ -632,7 +632,7 @@ class StraenWeb(object):
     def followers(self, *args, **kw):
         try:
             username = cherrypy.session.get(SESSION_KEY)
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(email)
+            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             users_followed_by = self.user_mgr.list_followers(user_id)
             users_list_str = ""
             if users_followed_by is not None and isinstance(users_followed_by, list):
@@ -640,7 +640,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
             html_file = os.path.join(g_root_dir, 'html', 'followers.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
-            return my_template.render(nav=self.create_navbar(email), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
+            return my_template.render(nav=self.create_navbar(username), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
         except:
             cherrypy.log.error('Unhandled exception in followers', 'EXEC', logging.WARNING)
         return self.error()
@@ -687,7 +687,7 @@ class StraenWeb(object):
 
     def import_tcx_file(username, uploaded_file_name):
         pass
-    
+
     # Processes an upload request.
     @cherrypy.expose
     def upload(self, ufile):
@@ -711,7 +711,7 @@ class StraenWeb(object):
                 elif uploaded_file_ext == '.tcx':
                     self.import_gpx_file(username, uploaded_file_name)
             except:
-                pass
+                cherrypy.log.error('Unhandled exception in upload when processing ' + uploaded_file_name, 'EXEC', logging.WARNING)
 
             # Remove the local file.
             os.remove(uploaded_file_name)
