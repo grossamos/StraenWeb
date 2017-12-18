@@ -84,11 +84,9 @@ def parse_json_loc_obj(db, json_obj):
         activity_id = json_obj["ActivityId"]
 
         # Parse optional identifiers.
-        user_name = ""
+        username = ""
         try:
-            user_name = json_obj["User Name"]
-            user_id, user_hash, user_realname = db.retrieve_user(email)
-            db.create_device(device_str, user_id)
+            username = json_obj["User Name"]
         except:
             pass
 
@@ -124,8 +122,8 @@ def parse_json_loc_obj(db, json_obj):
                     db.create_metadata(device_str, activity_id, date_time, key, value)
 
         # Update the user device association.
-        if len(user_name) > 0:
-            user_id, user_hash, user_realname = db.retrieve_user(user_name)
+        if len(username) > 0:
+            user_id, user_hash, user_realname = db.retrieve_user(username)
             db.create_device(device_str, user_id)
     except ValueError, e:
         log_info("ValueError in JSON data - reason " + str(e) + ". JSON str = " + str(json_obj))
