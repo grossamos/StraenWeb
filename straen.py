@@ -669,8 +669,8 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
 
-    def import_gpx_file(username, uploaded_file_name):
-        with open(uploaded_file_name, 'r') as gpx_file:
+    def import_gpx_file(self, username, file_name):
+        with open(file_name, 'r') as gpx_file:
             gpx = gpxpy.parse(gpx_file)
 
             lat = []
@@ -685,7 +685,7 @@ class StraenWeb(object):
             print lat
             print lon
 
-    def import_tcx_file(username, uploaded_file_name):
+    def import_tcx_file(self, username, file_name):
         pass
 
     # Processes an upload request.
@@ -697,24 +697,29 @@ class StraenWeb(object):
 
             # Generate a random name for the local file.
             upload_path = os.path.normpath(g_tempfile_dir)
-            uploaded_file_ext = os.path.splitext(ufile.filename)
-            uploaded_file_name = os.path.join(upload_path, str(uuid.uuid4()), uploaded_file_ext)
+            uploaded_file_name, uploaded_file_ext = os.path.splitext(ufile.filename)
+            local_file_name = os.path.join(upload_path, str(uuid.uuid4()))
+            local_file_name = local_file_name + uploaded_file_ext
 
             # Write the file.
-            with open(uploaded_file_name, 'wb') as saved_file:
-                shutil.copyfileobj(cherrypy.request.body, saved_file)
+            with open(local_file_name, 'wb') as saved_file:
+                while True:
+                    data = ufile.file.read(8192)
+                    if not data:
+                        break
+                    saved_file.write(data)
 
             # Parse the file.
             try:
                 if uploaded_file_ext == '.gpx':
-                    self.import_gpx_file(username, uploaded_file_name)
+                    self.import_gpx_file(username, local_file_name)
                 elif uploaded_file_ext == '.tcx':
-                    self.import_gpx_file(username, uploaded_file_name)
+                    self.import_gpx_file(username, local_file_name)
             except:
                 cherrypy.log.error('Unhandled exception in upload when processing ' + uploaded_file_name, 'EXEC', logging.WARNING)
 
             # Remove the local file.
-            os.remove(uploaded_file_name)
+            os.remove(local_file_name)
 
         except:
             cherrypy.log.error('Unhandled exception in upload', 'EXEC', logging.WARNING)
