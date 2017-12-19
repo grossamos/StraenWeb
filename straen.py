@@ -570,7 +570,11 @@ class StraenWeb(object):
     @require()
     def my_activities(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
@@ -591,7 +595,11 @@ class StraenWeb(object):
     @require()
     def all_activities(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
@@ -612,7 +620,11 @@ class StraenWeb(object):
     @require()
     def following(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             users_following = self.user_mgr.list_users_followed(user_id)
             users_list_str = ""
@@ -631,7 +643,11 @@ class StraenWeb(object):
     @require()
     def followers(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             users_followed_by = self.user_mgr.list_followers(user_id)
             users_list_str = ""
@@ -650,7 +666,11 @@ class StraenWeb(object):
     @require()
     def device_list(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             devices = self.user_mgr.list_user_devices(user_id)
             device_list_str = ""
@@ -692,8 +712,10 @@ class StraenWeb(object):
     @cherrypy.expose
     def upload(self, ufile):
         try:
-            # Get the username from the session key.
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
 
             # Generate a random name for the local file.
             upload_path = os.path.normpath(g_tempfile_dir)
@@ -730,7 +752,11 @@ class StraenWeb(object):
     @require()
     def import_activity(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             html_file = os.path.join(g_root_dir, 'html', 'import.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
@@ -744,7 +770,11 @@ class StraenWeb(object):
     @require()
     def settings(self, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
             html_file = os.path.join(g_root_dir, 'html', 'settings.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
@@ -758,7 +788,11 @@ class StraenWeb(object):
     @require()
     def request_to_follow(self, email, target_email, *args, **kw):
         try:
+            # Get the logged in user
             username = cherrypy.session.get(SESSION_KEY)
+            if username is None:
+                return self.login()
+
             if self.user_mgr.request_to_follow(username, target_email):
                 result = ""
             else:
