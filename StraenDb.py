@@ -96,7 +96,7 @@ class MongoDatabase(Database.Database):
             return user_list
 
         try:
-            matched_users = self.users_collection.find({"username": "*" + username + "*"})
+            matched_users = self.users_collection.find({"username": {"$regex": username}})
             if matched_users is not None:
                 for matched_user in matched_users:
                     print matched_user
