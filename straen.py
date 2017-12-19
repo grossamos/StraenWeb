@@ -873,6 +873,7 @@ class StraenWeb(object):
 # Parse command line options.
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", default=False, help="Prevents the app from going into the background", required=False)
+parser.add_argument("--port", type=int, default=8080, help="Port on which to listen", required=False)
 parser.add_argument("--https", action="store_true", default=False, help="Runs the app as HTTPS", required=False)
 parser.add_argument("--cert", default="cert.pem", help="Certificate file for HTTPS", required=False)
 parser.add_argument("--privkey", default="privkey.pem", help="Private Key file for HTTPS", required=False)
@@ -885,9 +886,9 @@ except IOError as e:
 
 if args.debug:
     if args.https:
-        g_root_url = "https://127.0.0.1:8080"
+        g_root_url = "https://127.0.0.1:" + str(args.port)
     else:
-        g_root_url = "http://127.0.0.1:8080"
+        g_root_url = "http://127.0.0.1:" + str(args.port)
 else:
     if args.https:
         g_root_url = 'https://straen-app.com'
@@ -949,6 +950,7 @@ conf = {
 
 cherrypy.config.update({
     'server.socket_host': '127.0.0.1',
+    'server.socket_port': args.port,
     'requests.show_tracebacks': False,
     'log.access_file': ACCESS_LOG,
     'log.error_file': ERROR_LOG})
