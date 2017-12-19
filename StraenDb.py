@@ -99,7 +99,7 @@ class MongoDatabase(Database.Database):
             matched_users = self.users_collection.find({"username": {"$regex": username}})
             if matched_users is not None:
                 for matched_user in matched_users:
-                    print matched_user
+                    user_list.append(matched_user["username"])
         except:
             traceback.print_exc(file=sys.stdout)
             self.log_error(sys.exc_info()[0])
