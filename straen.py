@@ -52,6 +52,7 @@ POWER_KEY = "Power"
 
 def signal_handler(signal, frame):
     global g_app
+
     print "Exiting..."
     if g_app is not None:
         g_app.terminate()
@@ -59,6 +60,8 @@ def signal_handler(signal, frame):
 
 
 def check_auth(*args, **kwargs):
+    global g_app
+
     # A tool that looks in config for 'auth.require'. If found and it is not None, a login
     # is required and the entry is evaluated as a list of conditions that the user must fulfill
     conditions = cherrypy.request.config.get('auth.require', None)
