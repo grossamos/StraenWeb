@@ -15,6 +15,7 @@ import sys
 import traceback
 import uuid
 
+import StraenApi
 import DataMgr
 import UserMgr
 
@@ -934,6 +935,16 @@ class StraenWeb(object):
         except:
             result = self.error()
         return result
+
+    # Endpoint for API calls.
+    @cherrypy.expose
+    def api(self, *args, **kw):
+        if len(args) > 0:
+            api_version = args[0]
+            if api_version == '1.0':
+                api = StraenApi()
+                api.handle_api_1_0_request(args[1:])
+        pass
 
     # Renders the index page.
     @cherrypy.expose
