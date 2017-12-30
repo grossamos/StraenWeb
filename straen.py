@@ -469,36 +469,40 @@ class StraenWeb(object):
 
     # Helper function for creating a table row describing an activity.
     def render_activity_row(self, user_realname, activity, row_id):
-        row = "<tr>"
-        row += "<td>"
-        if 'activity_id' in activity:
-            row += activity['activity_id']
-        else:
-            row += ""
-        row += "</td>"
-        row += "<td>"
-        if user_realname is not None:
-            row += user_realname
-            row += "<br>"
-        row += "<a href=\"" + g_root_url + "\\device\\" + \
-            activity['device_str'] + "?activity_id=" + activity['activity_id'] + "\">"
+        activity_id = activity['activity_id']
         if 'activity_name' in activity:
-            row += activity['activity_name']
+            activity_name = activity['activity_name']
         else:
-            row += "Untitled"
-        row += "</a></td>"
-        row += "<td>"
+            activity_name = "Untitled"
+        if 'Time' in activity:
+            activity_time = datetime.datetime.fromtimestamp(activity['Time']).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            activity_time = "-"
         checkbox_value = "checked"
         checkbox_label = "Public"
         if 'visibility' in activity:
             if activity['visibility'] == "private":
                 checkbox_value = "unchecked"
                 checkbox_label = "Private"
+
+        row = "<tr>"
+        row += "<td>"
+        row += activity_id
+        row += "</td>"
+        row += "<td>"
+        row += activity_time
+        row += "</td>"
+        row += "<td>"
+        if user_realname is not None:
+            row += user_realname
+            row += "<br>"
+        row += "<a href=\"" + g_root_url + "\\device\\" + activity['device_str'] + "?activity_id=" + activity_id + "\">"
+        row += activity_name
+        row += "</a></td>"
+        row += "<td>"
         row += "<div>\n"
         row += "\t<input type=\"checkbox\" value=\"\" " + checkbox_value + " id=\"" + \
-                    str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + \
-                    activity['device_str'] + "\", " + \
-                    activity['activity_id'] + ")';>"
+            str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + activity['device_str'] + "\", " + activity_id + ")';>"
         row += "<span>" + checkbox_label + "</span></label>"
         row += "</div>\n"
         row += "</td>"
@@ -581,7 +585,9 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
             row_id = 0
@@ -610,7 +616,9 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
             row_id = 0
@@ -639,7 +647,10 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+
+            # Get the list of users followed by the logged in user.
             users_following = self.user_mgr.list_users_followed(user_id)
             users_list_str = ""
             if users_following is not None and isinstance(users_following, list):
@@ -666,7 +677,9 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+
             users_followed_by = self.user_mgr.list_followers(user_id)
             users_list_str = ""
             if users_followed_by is not None and isinstance(users_followed_by, list):
@@ -693,7 +706,9 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+
             devices = self.user_mgr.list_user_devices(user_id)
             device_list_str = ""
             if devices is not None and isinstance(devices, list):
@@ -785,6 +800,7 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
 
             # Render from template.
@@ -807,6 +823,7 @@ class StraenWeb(object):
             if username is None:
                 raise cherrypy.HTTPRedirect("/login")
 
+            # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
 
             # Render from template.
