@@ -973,9 +973,8 @@ class StraenWeb(object):
         if len(args) > 0:
             api_version = args[0]
             if api_version == '1.0':
-                api = StraenApi()
+                api = StraenApi.StraenApi()
                 api.handle_api_1_0_request(args[1:])
-        pass
 
     # Renders the index page.
     @cherrypy.expose
