@@ -36,7 +36,6 @@ g_root_url = 'http://straen-app.com'
 g_tempfile_dir = os.path.join(g_root_dir, 'tempfile')
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
-g_error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
 g_error_logged_in_html_file = os.path.join(g_root_dir, 'html', 'error_logged_in.html')
 g_app = None
 
@@ -548,7 +547,8 @@ class StraenWeb(object):
     def error(self, error_str=None):
         try:
             cherrypy.response.status = 500
-            my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
+            error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
+            my_template = Template(filename=error_html_file, module_directory=g_tempmod_dir)
             if error_str is None:
                 error_str = "Internal Error."
         except:
@@ -863,8 +863,7 @@ class StraenWeb(object):
             if self.user_mgr.request_to_follow(username, target_email):
                 result = ""
             else:
-                my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="Unable to process the request.")
+                result = self.error("Unable to process the request.")
             return result
         except cherrypy.HTTPRedirect as e:
             raise e
@@ -893,8 +892,7 @@ class StraenWeb(object):
             password = cherrypy.request.params.get("password")
 
             if email is None or password is None:
-                my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
-                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="An email address and password were not provided.")
+                result = self.error("An email address and password were not provided.")
             else:
                 user_logged_in, info_str = self.user_mgr.authenticate_user(email, password)
                 if user_logged_in:
@@ -902,12 +900,11 @@ class StraenWeb(object):
                     cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
                     result = self.all_activities(email, None, None)
                 else:
-                    my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
                     error_msg = "Unable to authenticate the user."
                     if len(info_str) > 0:
                         error_msg += " "
                         error_msg += info_str
-                    result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_msg)
+                    result = self.error(error_msg)
             return result
         except:
             cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
@@ -923,12 +920,11 @@ class StraenWeb(object):
                 cherrypy.session[SESSION_KEY] = cherrypy.request.login = email
                 result = self.all_activities(email, *args, **kw)
             else:
-                my_template = Template(filename=g_error_html_file, module_directory=g_tempmod_dir)
                 error_msg = "Unable to create the user."
                 if len(info_str) > 0:
                     error_msg += " "
                     error_msg += info_str
-                result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_msg)
+                    result = self.error(error_msg)
             return result
         except:
             cherrypy.log.error('Unhandled exception in submit_new_login', 'EXEC', logging.WARNING)
