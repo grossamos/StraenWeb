@@ -1024,15 +1024,15 @@ user_mgr = UserMgr.UserMgr(g_root_dir)
 data_mgr = DataMgr.DataMgr(g_root_dir)
 g_app = StraenWeb(user_mgr, data_mgr)
 
-cherrypy.tools.my_auth = cherrypy.Tool('before_handler', check_auth)
+cherrypy.tools.straenweb_auth = cherrypy.Tool('before_handler', check_auth)
 
 conf = {
     '/':
     {
         'tools.staticdir.root': g_root_dir,
-        'tools.my_auth.on': True,
+        'tools.straenweb_auth.on': True,
         'tools.sessions.on': True,
-        'tools.sessions.name': 'my_auth'
+        'tools.sessions.name': 'straenweb_auth'
     },
     '/css':
     {
