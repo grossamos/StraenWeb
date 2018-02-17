@@ -59,6 +59,14 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
+@cherrypy.tools.register('before_finalize', priority=60)
+def secureheaders():
+    headers = cherrypy.response.headers
+    headers['X-Frame-Options'] = 'DENY'
+    headers['X-XSS-Protection'] = '1; mode=block'
+    headers['Content-Security-Policy'] = "default-src='self'"
+
+
 def check_auth(*args, **kwargs):
     global g_app
 
@@ -1032,7 +1040,8 @@ conf = {
         'tools.staticdir.root': g_root_dir,
         'tools.straenweb_auth.on': True,
         'tools.sessions.on': True,
-        'tools.sessions.name': 'straenweb_auth'
+        'tools.sessions.name': 'straenweb_auth',
+        'tools.secureheaders.on': True
     },
     '/css':
     {
