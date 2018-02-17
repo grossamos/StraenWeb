@@ -1041,6 +1041,7 @@ conf = {
         'tools.straenweb_auth.on': True,
         'tools.sessions.on': True,
         'tools.sessions.name': 'straenweb_auth',
+        'tools.sessions.timeout': 129600,
         'tools.secureheaders.on': True
     },
     '/css':
