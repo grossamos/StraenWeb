@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-requirements = ['python-tcxparser']
+requirements = ['cherrypy', 'gpxpy', 'mako', 'bson', 'pymongo', 'bcrypt', 'python-tcxparser']
 
 setup(
     name='straenweb',
