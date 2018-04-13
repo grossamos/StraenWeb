@@ -486,6 +486,7 @@ class MongoDatabase(Database.Database):
                 location_list.append(value)
                 activity['locations'] = location_list
                 self.activities_collection.save(activity)
+                return True
         except:
             traceback.print_exc(file=sys.stdout)
             self.log_error(sys.exc_info()[0])

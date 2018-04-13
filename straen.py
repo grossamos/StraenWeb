@@ -3,7 +3,6 @@
 import argparse
 import cherrypy
 import datetime
-import gpxpy
 import json
 import logging
 import mako
@@ -16,6 +15,7 @@ import traceback
 import uuid
 
 import StraenApi
+import Importer
 import DataMgr
 import UserMgr
 
@@ -752,25 +752,6 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
 
-    def import_gpx_file(self, username, file_name):
-        with open(file_name, 'r') as gpx_file:
-            gpx = gpxpy.parse(gpx_file)
-
-            lat = []
-            lon = []
-
-            for track in gpx.tracks:
-                for segment in track.segments:
-                    for point in segment.points:
-                        lat.append(point.latitude)
-                        lon.append(point.longitude)
-
-            print lat
-            print lon
-
-    def import_tcx_file(self, username, file_name):
-        pass
-
     # Processes an upload request.
     @cherrypy.expose
     def upload(self, ufile):
@@ -794,13 +775,9 @@ class StraenWeb(object):
                         break
                     saved_file.write(data)
 
-            # Parse the file.
-            try:
-                if uploaded_file_ext == '.gpx':
-                    self.import_gpx_file(username, local_file_name)
-                elif uploaded_file_ext == '.tcx':
-                    self.import_gpx_file(username, local_file_name)
-            except:
+            # Parse the file and store it's contents in the database.
+            importer = Importer(data_mgr)
+            if not importer.import_file(username, local_file_name, uploaded_file_ext):
                 cherrypy.log.error('Unhandled exception in upload when processing ' + uploaded_file_name, 'EXEC', logging.WARNING)
 
             # Remove the local file.

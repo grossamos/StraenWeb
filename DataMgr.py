@@ -12,6 +12,12 @@ class DataMgr(object):
     def terminate(self):
         self.db = None
 
+    def create_location(self, device_str, activity_id, date_time, lat, lon, alt):
+        if self.db is None:
+            return None, "No database."
+
+        return self.db.create_location(device_str, activity_id, date_time, lat, lon, alt)
+
     def retrieve_user_activities(self, user_id, start, num_results):
         if self.db is None:
             return None, "No database."
