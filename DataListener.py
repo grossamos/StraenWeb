@@ -9,9 +9,7 @@ import re
 import signal
 import socket
 import sys
-import threading
 import time
-import traceback
 import SocketServer
 import BaseHTTPServer
 import StraenDb
