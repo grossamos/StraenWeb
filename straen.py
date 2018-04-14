@@ -120,6 +120,7 @@ class StraenWeb(object):
         super(StraenWeb, self).__init__()
 
     def terminate(self):
+        """Destructor"""
         print "Terminating"
         self.user_mgr.terminate()
         self.user_mgr = None
@@ -183,8 +184,8 @@ class StraenWeb(object):
                 if len(response) > 1:
                     response += ","
                 localtimezone = tzlocal()
-                valueStr = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
-                response += json.dumps({"name": TIME_KEY, "value": valueStr})
+                value_str = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
+                response += json.dumps({"name": TIME_KEY, "value": value_str})
 
             distances = self.data_mgr.retrieve_metadata(DISTANCE_KEY, device_str, activity_id)
             if distances != None and len(distances) > 0:
@@ -241,11 +242,12 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in update_metadata', 'EXEC', logging.WARNING)
         return ""
 
-    # Login - called from the app.
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def login_submit(self, **kw):
+        """Login - called from the app."""
+
         try:
             email = cherrypy.request.json["username"]
             password = cherrypy.request.json["password"]
@@ -268,11 +270,12 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in login_submit', 'EXEC', logging.WARNING)
         return ""
 
-    # Creates a new login - called from the app.
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def create_login_submit(self, **kw):
+        """ Creates a new login - called from the app."""
+
         try:
             email = cherrypy.request.json["username"]
             password1 = cherrypy.request.json["password1"]
@@ -290,10 +293,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in create_login_submit', 'EXEC', logging.WARNING)
         return ""
 
-    # Lists users followed by the logged in user - called from the app.
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def list_users_followed(self, email=None, *args, **kw):
+        """Lists users followed by the logged in user - called from the app."""
+
         if email is None:
             return ""
 
@@ -315,10 +319,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in list_users_followed', 'EXEC', logging.WARNING)
         return ""
 
-    # Lists users following the logged in user - called from the app.
     @cherrypy.tools.json_out()
     @cherrypy.expose
     def list_followers(self, email=None, *args, **kw):
+        """Lists users following the logged in user - called from the app."""
+
         if email is None:
             return ""
 
@@ -357,23 +362,26 @@ class StraenWeb(object):
         except:
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
 
-    # The user's desired timestamp format.
     @staticmethod
     def timestamp_format():
+        """The user's desired timestamp format."""
+
         return "%Y/%m/%d %H:%M:%S"
 
-    # Converts from unix timestamp to human-readable
     @staticmethod
     def timestamp_code_to_str(ts_code):
+        """Converts from unix timestamp to human-readable"""
+
         try:
             return datetime.datetime.fromtimestamp(ts_code).strftime(StraenWeb.timestamp_format())
         except:
             pass
         return "-"
 
-    # Helper function for building the navigation bar.
     @staticmethod
     def create_navbar():
+        """Helper function for building the navigation bar."""
+
         navbar_str = "<nav>\n" \
             "\t<ul>\n" \
             "\t\t<li><a href=\"" + g_root_url + "/my_activities/\">My Activities</a></li>\n" \
@@ -387,8 +395,9 @@ class StraenWeb(object):
             "</nav>"
         return navbar_str
 
-    # Helper function for rendering the map corresonding to a specific device and activity.
     def render_page_for_activity(self, email, user_realname, device_str, activity_id):
+        """Helper function for rendering the map corresonding to a specific device and activity."""
+
         if device_str is None:
             my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
             return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="There is no data for the specified device.")
@@ -450,8 +459,9 @@ class StraenWeb(object):
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
         return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, deviceStr=device_str, centerLat=center_lat, lastLat=last_lat, lastLon=last_lon, centerLon=center_lon, route=route, routeLen=len(locations), activityId=str(activity_id), currentSpeeds=current_speeds_str, heartRates=heart_rates_str, powers=powers_str)
 
-    # Helper function for rendering the map corresonding to a multiple devices.
     def render_page_for_multiple_devices(self, email, user_realname, device_strs, user_id):
+        """Helper function for rendering the map corresonding to a multiple devices."""
+
         if device_strs is None:
             my_template = Template(filename=g_error_logged_in_html_file, module_directory=g_tempmod_dir)
             return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error="No device IDs were specified.")
@@ -488,8 +498,9 @@ class StraenWeb(object):
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
         return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
 
-    # Helper function for creating a table row describing an activity.
     def render_activity_row(self, user_realname, activity, row_id):
+        """Helper function for creating a table row describing an activity."""
+
         activity_id = activity['activity_id']
         if 'activity_name' in activity:
             activity_name = activity['activity_name']
@@ -530,9 +541,10 @@ class StraenWeb(object):
         row += "</tr>\n"
         return row
 
-    # Helper function for creating a table row describing a user.
     @staticmethod
     def render_user_row(user):
+        """Helper function for creating a table row describing a user."""
+
         row = "<tr>"
         row += "<td>"
         row += user
@@ -540,8 +552,9 @@ class StraenWeb(object):
         row += "</tr>\n"
         return row
 
-    # Returns TRUE if the logged in user is allowed to view the specified activity.
     def activity_is_public(self, device_str, activity_id):
+        """Returns TRUE if the logged in user is allowed to view the specified activity."""
+
         visibility = self.data_mgr.retrieve_activity_visibility(device_str, activity_id)
         if visibility is not None:
             if visibility == "public":
@@ -550,9 +563,10 @@ class StraenWeb(object):
                 return False
         return True
 
-    # Renders the errorpage.
     @cherrypy.expose
     def error(self, error_str=None):
+        """Renders the errorpage."""
+
         try:
             cherrypy.response.status = 500
             error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
@@ -563,9 +577,10 @@ class StraenWeb(object):
             pass
         return my_template.render(product=PRODUCT_NAME, root_url=g_root_url, error=error_str)
 
-    # Renders the map page for the current activity from a single device.
     @cherrypy.expose
     def live(self, device_str):
+        """Renders the map page for the current activity from a single device."""
+
         try:
             activity_id = self.data_mgr.retrieve_most_recent_activity_id_for_device(device_str)
             if activity_id is None:
@@ -577,10 +592,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the map page for a single device.
     @cherrypy.expose
     @require()
     def device(self, device_str, *args, **kw):
+        """Renders the map page for a single device."""
+
         try:
             activity_id_str = cherrypy.request.params.get("activity_id")
             if activity_id_str is None:
@@ -597,10 +613,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of the specified user's activities.
     @cherrypy.expose
     @require()
     def my_activities(self, *args, **kw):
+        """Renders the list of the specified user's activities."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -628,10 +645,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in my_activities', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of all activities the specified user is allowed to view.
     @cherrypy.expose
     @require()
     def all_activities(self, *args, **kw):
+        """Renders the list of all activities the specified user is allowed to view."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -659,10 +677,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in all_activities', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of users the specified user is following.
     @cherrypy.expose
     @require()
     def following(self, *args, **kw):
+        """Renders the list of users the specified user is following."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -689,10 +708,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in following', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of users that are following the specified user.
     @cherrypy.expose
     @require()
     def followers(self, *args, **kw):
+        """Renders the list of users that are following the specified user."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -718,10 +738,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in followers', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the list of a user's devices.
     @cherrypy.expose
     @require()
     def device_list(self, *args, **kw):
+        """Renders the list of a user's devices."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -752,9 +773,10 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in device_list', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Processes an upload request.
     @cherrypy.expose
     def upload(self, ufile):
+        """Processes an upload request."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -789,10 +811,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in upload', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the import page.
     @cherrypy.expose
     @require()
     def import_activity(self, *args, **kw):
+        """Renders the import page."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -812,10 +835,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the user's settings page.
     @cherrypy.expose
     @require()
     def settings(self, *args, **kw):
+        """Renders the user's settings page."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -835,10 +859,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in settings', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the page for inviting someone to follow.
     @cherrypy.expose
     @require()
     def request_to_follow(self, email, target_email, *args, **kw):
+        """Renders the page for inviting someone to follow."""
+
         try:
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
@@ -856,10 +881,11 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in request_to_follow', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Processes a search user request.
     @cherrypy.expose
     @require()
     def submit_user_search(self, *args, **kw):
+        """Processes a search user request."""
+
         try:
             user = cherrypy.request.params.get("searchname")
             matched_users = self.user_mgr.retrieve_matched_users(user)
@@ -869,9 +895,10 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in submit_user_search', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Processes a login.
     @cherrypy.expose
     def submit_login(self, *args, **kw):
+        """Processes a login."""
+
         try:
             email = cherrypy.request.params.get("email")
             password = cherrypy.request.params.get("password")
@@ -895,9 +922,10 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in submit_login', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Creates a new login.
     @cherrypy.expose
     def submit_new_login(self, email, realname, password1, password2, *args, **kw):
+        """Creates a new login."""
+
         try:
             user_created, info_str = self.user_mgr.create_user(email, realname, password1, password2, "")
             if user_created:
@@ -915,9 +943,10 @@ class StraenWeb(object):
             cherrypy.log.error('Unhandled exception in submit_new_login', 'EXEC', logging.WARNING)
         return self.error()
 
-    # Renders the login page.
     @cherrypy.expose
     def login(self):
+        """Renders the login page."""
+
         try:
             login_html_file = os.path.join(g_root_dir, 'html', 'login.html')
             my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
@@ -926,9 +955,10 @@ class StraenWeb(object):
             result = self.error()
         return result
 
-    # Renders the create login page.
     @cherrypy.expose
     def create_login(self):
+        """Renders the create login page."""
+
         try:
             create_login_html_file = os.path.join(g_root_dir, 'html', 'create_login.html')
             my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
@@ -937,9 +967,10 @@ class StraenWeb(object):
             result = self.error()
         return result
 
-    # Renders the about page.
     @cherrypy.expose
     def about(self):
+        """Renders the about page."""
+
         try:
             about_html_file = os.path.join(g_root_dir, 'html', 'about.html')
             my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
@@ -948,18 +979,19 @@ class StraenWeb(object):
             result = self.error()
         return result
 
-    # Endpoint for API calls.
     @cherrypy.expose
     def api(self, *args, **kw):
+        """Endpoint for API calls."""
+
         if len(args) > 0:
             api_version = args[0]
             if api_version == '1.0':
                 api = StraenApi.StraenApi()
                 api.handle_api_1_0_request(args[1:])
 
-    # Renders the index page.
     @cherrypy.expose
     def index(self):
+        """Renders the index page."""
         return self.login()
 
 
