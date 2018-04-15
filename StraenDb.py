@@ -27,6 +27,7 @@ class MongoDatabase(Database.Database):
         self.create()
 
     def create(self):
+        """Connects/creates the database"""
         try:
             self.conn = pymongo.MongoClient('localhost:27017')
             self.db = self.conn['straendb']
@@ -87,6 +88,7 @@ class MongoDatabase(Database.Database):
         return None, None, None
 
     def retrieve_matched_users(self, username):
+        """Returns a list of user names for users that match the specified regex."""
         user_list = []
 
         if username is None:

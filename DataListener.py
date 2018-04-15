@@ -228,8 +228,8 @@ def Start(protocol, port):
     global g_root_dir
 
     log_info("Creating the database in " + g_root_dir)
-    db = StraenDb.MongoDatabase(g_root_dir)
-    db.create()
+    database = StraenDb.MongoDatabase(g_root_dir)
+    database.create()
 
     if protocol == "rest":
         g_listener = ThreadedHTTPServer(port)
