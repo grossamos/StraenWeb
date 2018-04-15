@@ -13,6 +13,7 @@ import time
 import SocketServer
 import BaseHTTPServer
 import StraenDb
+import StraenKeys
 
 
 g_debug = False
@@ -20,12 +21,6 @@ g_data_log = False
 g_root_dir = os.path.dirname(os.path.realpath(__file__))
 g_not_meta_data = ["DeviceId", "ActivityId", "ActivityName", "User Name", "Latitude", "Longitude", "Altitude", "Horizontal Accuracy", "Vertical Accuracy"]
 g_listener = None
-
-CADENCE_KEY = "Cadence"
-HEART_RATE_KEY = "Heart Rate"
-POWER_KEY = "Power"
-SPEED_KEY = "Current Speed"
-PACE_KEY = "Current Pace"
 
 
 def signal_handler(signal, frame):
@@ -114,9 +109,9 @@ def parse_json_loc_obj(db, json_obj):
             key = item[0]
             value = item[1]
             if not key in g_not_meta_data:
-                if key in [CADENCE_KEY, HEART_RATE_KEY, POWER_KEY]:
+                if key in [StraenKeys.CADENCE_KEY, StraenKeys.HEART_RATE_KEY, StraenKeys.POWER_KEY]:
                     db.create_sensordata(device_str, activity_id, date_time, key, value)
-                elif key in [SPEED_KEY, PACE_KEY]:
+                elif key in [StraenKeys.CURRENT_SPEED_KEY, StraenKeys.CURRENT_PACE_KEY]:
                     db.create_metadata(device_str, activity_id, date_time, key, value)
 
         # Update the user device association.

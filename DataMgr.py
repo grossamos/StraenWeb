@@ -7,7 +7,7 @@ import Importer
 class DataMgr(Importer.LocationWriter):
     def __init__(self, root_dir):
         self.database = StraenDb.MongoDatabase(root_dir)
-        self.database.create()
+        self.database.connect()
         super(Importer.LocationWriter, self).__init__()
 
     def terminate(self):

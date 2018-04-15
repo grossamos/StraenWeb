@@ -18,21 +18,20 @@ class Device(object):
 
 class MongoDatabase(Database.Database):
     conn = None
-    db = None
+    database = None
     users_collection = None
     activities_collection = None
 
     def __init__(self, rootDir):
         Database.Database.__init__(self, rootDir)
-        self.create()
 
-    def create(self):
+    def connect(self):
         """Connects/creates the database"""
         try:
             self.conn = pymongo.MongoClient('localhost:27017')
-            self.db = self.conn['straendb']
-            self.users_collection = self.db['users']
-            self.activities_collection = self.db['activities']
+            self.database = self.conn['straendb']
+            self.users_collection = self.database['users']
+            self.activities_collection = self.database['activities']
             return True
         except pymongo.errors.ConnectionFailure, e:
             self.log_error("Could not connect to MongoDB: %s" % e)
@@ -470,8 +469,16 @@ class MongoDatabase(Database.Database):
             self.log_error(sys.exc_info()[0])
         return None
 
+    def create(self, username, stream_name, stream_description):
+        """Inherited from LocationWriter."""
+        return None, None
+
+    def create_track(self, device_str, activity_id, track_name, track_description):
+        """Inherited from LocationWriter."""
+        pass
+
     def create_location(self, device_str, activity_id, date_time, latitude, longitude, altitude):
-        """Create method for a location."""
+        """Inherited from LocationWriter. Create method for a location."""
         if device_str is None:
             self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: device_str")
             return False
@@ -507,6 +514,10 @@ class MongoDatabase(Database.Database):
             self.log_error(sys.exc_info()[0])
         return False
 
+    def create_sensor_reading(self, device_str, activity_id, date_time, key, value):
+        """Inherited from LocationWriter. Processes a sensor reading from the importer."""
+        pass
+        
     def retrieve_locations(self, device_str, activity_id):
         """Returns all the locations for the specified activity."""
         if device_str is None:

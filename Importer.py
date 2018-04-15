@@ -4,15 +4,25 @@ import calendar
 import datetime
 import gpxpy
 
+import StraenKeys
+
 class LocationWriter(object):
     """Base class for any class that handles data read from the Importer."""
 
-    def create_location_stream(self, username):
+    def create(self, username, stream_name, stream_description):
         """Pure virtual method for starting a location stream - creates the activity ID for the specified user."""
+        pass
+
+    def create_track(self, device_str, activity_id, track_name, track_description):
+        """Pure virtual method for starting a location track - creates the activity ID for the specified user."""
         pass
 
     def create_location(self, device_str, activity_id, date_time, latitude, longitude, altitude):
         """Pure virtual method for processing a location read by the importer."""
+        pass
+
+    def create_sensor_reading(self, device_str, activity_id, date_time, key, value):
+        """Pure virtual method for processing a sensor reading from the importer."""
         pass
 
 class Importer(object):
@@ -26,15 +36,23 @@ class Importer(object):
         with open(file_name, 'r') as gpx_file:
             gpx = gpxpy.parse(gpx_file)
 
-            device_str, activity_id = self.g_location_store.create_location_stream(username)
+            device_str, activity_id = self.g_location_store.create(username, gpx.name, gpx.description)
 
             for track in gpx.tracks:
+                self.g_location_store.create_track(device_str, activity_id, track.name, track.description)
                 for segment in track.segments:
                     for point in segment.points:
                         dt_str = str(point.time) + " UTC"
                         dt_obj = datetime.datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S %Z").timetuple()
                         dt_unix = calendar.timegm(dt_obj)
                         self.g_location_store.create_location(device_str, activity_id, dt_unix, point.latitude, point.longitude, point.elevation)
+
+                        extensions = point.extensions
+                        if 'power' in extensions:
+                            self.g_location_store.create_sensor_reading(device_str, activity_id, dt_unix, StraenKeys.POWER_KEY, extensions['power'])
+                        gpxtpx_extensions = extensions['gpxtpx:TrackPointExtension']
+                        if 'gpxtpx:hr' in gpxtpx_extensions:
+                            self.g_location_store.create_sensor_reading(device_str, activity_id, dt_unix, StraenKeys.HEART_RATE_KEY, gpxtpx_extensions['gpxtpx:hr'])
 
             return True
         return False

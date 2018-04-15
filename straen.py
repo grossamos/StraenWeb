@@ -15,6 +15,7 @@ import traceback
 import uuid
 
 import StraenApi
+import StraenKeys
 import Importer
 import DataMgr
 import UserMgr
@@ -38,16 +39,6 @@ g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
 g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
 g_error_logged_in_html_file = os.path.join(g_root_dir, 'html', 'error_logged_in.html')
 g_app = None
-
-NAME_KEY = "Name"
-TIME_KEY = "Time"
-DISTANCE_KEY = "Distance"
-CADENCE_KEY = "Cadence"
-CURRENT_SPEED_KEY = "Current Speed"
-AVG_SPEED_KEY = "Avg. Speed"
-MOVING_SPEED_KEY = "Moving Speed"
-HEART_RATE_KEY = "Heart Rate"
-POWER_KEY = "Power"
 
 
 def signal_handler(signal, frame):
@@ -175,65 +166,65 @@ class StraenWeb(object):
             cherrypy.response.headers['Content-Type'] = 'application/json'
             response = "["
 
-            names = self.data_mgr.retrieve_metadata(NAME_KEY, device_str, activity_id)
+            names = self.data_mgr.retrieve_metadata(StraenKeys.NAME_KEY, device_str, activity_id)
             if names != None and len(names) > 0:
-                response += json.dumps({"name": NAME_KEY, "value": names[-1][1]})
+                response += json.dumps({"name": StraenKeys.NAME_KEY, "value": names[-1][1]})
 
-            times = self.data_mgr.retrieve_metadata(TIME_KEY, device_str, activity_id)
+            times = self.data_mgr.retrieve_metadata(StraenKeys.TIME_KEY, device_str, activity_id)
             if times != None and len(times) > 0:
                 if len(response) > 1:
                     response += ","
                 localtimezone = tzlocal()
                 value_str = datetime.datetime.fromtimestamp(times[-1][1] / 1000, localtimezone).strftime('%Y-%m-%d %H:%M:%S')
-                response += json.dumps({"name": TIME_KEY, "value": value_str})
+                response += json.dumps({"name": StraenKeys.TIME_KEY, "value": value_str})
 
-            distances = self.data_mgr.retrieve_metadata(DISTANCE_KEY, device_str, activity_id)
+            distances = self.data_mgr.retrieve_metadata(StraenKeys.DISTANCE_KEY, device_str, activity_id)
             if distances != None and len(distances) > 0:
                 if len(response) > 1:
                     response += ","
                 distance = distances[len(distances) - 1]
                 value = float(distance.values()[0])
-                response += json.dumps({"name": DISTANCE_KEY, "value": "{:.2f}".format(value)})
+                response += json.dumps({"name": StraenKeys.DISTANCE_KEY, "value": "{:.2f}".format(value)})
 
-            avg_speeds = self.data_mgr.retrieve_metadata(AVG_SPEED_KEY, device_str, activity_id)
+            avg_speeds = self.data_mgr.retrieve_metadata(StraenKeys.AVG_SPEED_KEY, device_str, activity_id)
             if avg_speeds != None and len(avg_speeds) > 0:
                 if len(response) > 1:
                     response += ","
                 speed = avg_speeds[len(avg_speeds) - 1]
                 value = float(speed.values()[0])
-                response += json.dumps({"name": AVG_SPEED_KEY, "value": "{:.2f}".format(value)})
+                response += json.dumps({"name": StraenKeys.AVG_SPEED_KEY, "value": "{:.2f}".format(value)})
 
-            moving_speeds = self.data_mgr.retrieve_metadata(MOVING_SPEED_KEY, device_str, activity_id)
+            moving_speeds = self.data_mgr.retrieve_metadata(StraenKeys.MOVING_SPEED_KEY, device_str, activity_id)
             if moving_speeds != None and len(moving_speeds) > 0:
                 if len(response) > 1:
                     response += ","
                 speed = moving_speeds[len(moving_speeds) - 1]
                 value = float(speed.values()[0])
-                response += json.dumps({"name": MOVING_SPEED_KEY, "value": "{:.2f}".format(value)})
+                response += json.dumps({"name": StraenKeys.MOVING_SPEED_KEY, "value": "{:.2f}".format(value)})
 
-            heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_KEY, device_str, activity_id)
+            heart_rates = self.data_mgr.retrieve_sensordata(StraenKeys.HEART_RATE_KEY, device_str, activity_id)
             if heart_rates != None and len(heart_rates) > 0:
                 if len(response) > 1:
                     response += ","
                 heart_rate = heart_rates[len(heart_rates) - 1]
                 value = float(heart_rate.values()[0])
-                response += json.dumps({"name": HEART_RATE_KEY, "value": "{:.2f} bpm".format(value)})
+                response += json.dumps({"name": StraenKeys.HEART_RATE_KEY, "value": "{:.2f} bpm".format(value)})
 
-            cadences = self.data_mgr.retrieve_sensordata(CADENCE_KEY, device_str, activity_id)
+            cadences = self.data_mgr.retrieve_sensordata(StraenKeys.CADENCE_KEY, device_str, activity_id)
             if cadences != None and len(cadences) > 0:
                 if len(response) > 1:
                     response += ","
                 cadence = cadences[len(cadences) - 1]
                 value = float(cadence.values()[0])
-                response += json.dumps({"name": CADENCE_KEY, "value": "{:.2f}".format(value)})
+                response += json.dumps({"name": StraenKeys.CADENCE_KEY, "value": "{:.2f}".format(value)})
 
-            powers = self.data_mgr.retrieve_sensordata(POWER_KEY, device_str, activity_id)
+            powers = self.data_mgr.retrieve_sensordata(StraenKeys.POWER_KEY, device_str, activity_id)
             if powers != None and len(powers) > 0:
                 if len(response) > 1:
                     response += ","
                 power = powers[len(powers) - 1]
                 value = float(power.values()[0])
-                response += json.dumps({"name": POWER_KEY, "value": "{:.2f} watts".format(value)})
+                response += json.dumps({"name": StraenKeys.POWER_KEY, "value": "{:.2f} watts".format(value)})
 
             response += "]"
 
@@ -424,7 +415,7 @@ class StraenWeb(object):
             last_lat = last_loc['latitude']
             last_lon = last_loc['longitude']
 
-        current_speeds = self.data_mgr.retrieve_metadata(CURRENT_SPEED_KEY, device_str, activity_id)
+        current_speeds = self.data_mgr.retrieve_metadata(StraenKeys.CURRENT_SPEED_KEY, device_str, activity_id)
         current_speeds_str = ""
         if current_speeds is not None and isinstance(current_speeds, list):
             for current_speed in current_speeds:
@@ -432,7 +423,7 @@ class StraenWeb(object):
                 value = current_speed.values()[0]
                 current_speeds_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-        heart_rates = self.data_mgr.retrieve_sensordata(HEART_RATE_KEY, device_str, activity_id)
+        heart_rates = self.data_mgr.retrieve_sensordata(StraenKeys.HEART_RATE_KEY, device_str, activity_id)
         heart_rates_str = ""
         if heart_rates is not None and isinstance(heart_rates, list):
             for heart_rate in heart_rates:
@@ -440,7 +431,7 @@ class StraenWeb(object):
                 value = heart_rate.values()[0]
                 heart_rates_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-        cadences = self.data_mgr.retrieve_sensordata(CADENCE_KEY, device_str, activity_id)
+        cadences = self.data_mgr.retrieve_sensordata(StraenKeys.CADENCE_KEY, device_str, activity_id)
         cadences_str = ""
         if cadences is not None and isinstance(cadences, list):
             for cadence in cadences:
@@ -448,7 +439,7 @@ class StraenWeb(object):
                 value = cadence.values()[0]
                 cadences_str += "\t\t\t\t{ date: new Date(" + str(time) + "), value: " + str(value) + " },\n"
 
-        powers = self.data_mgr.retrieve_sensordata(POWER_KEY, device_str, activity_id)
+        powers = self.data_mgr.retrieve_sensordata(StraenKeys.POWER_KEY, device_str, activity_id)
         powers_str = ""
         if powers is not None and isinstance(powers, list):
             for power in powers:
