@@ -10,4 +10,3 @@ MOVING_SPEED_KEY = "Moving Speed"
 HEART_RATE_KEY = "Heart Rate"
 CURRENT_PACE_KEY = "Current Pace"
 POWER_KEY = "Power"
-

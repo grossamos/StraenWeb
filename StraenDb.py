@@ -517,7 +517,7 @@ class MongoDatabase(Database.Database):
     def create_sensor_reading(self, device_str, activity_id, date_time, key, value):
         """Inherited from LocationWriter. Processes a sensor reading from the importer."""
         pass
-        
+
     def retrieve_locations(self, device_str, activity_id):
         """Returns all the locations for the specified activity."""
         if device_str is None:

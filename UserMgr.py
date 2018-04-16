@@ -7,12 +7,15 @@ import StraenDb
 MIN_PASSWORD_LEN  = 8
 
 class UserMgr(object):
+    """Class for managing users"""
+
     def __init__(self, root_dir):
         self.database = StraenDb.MongoDatabase(root_dir)
         self.database.connect()
         super(UserMgr, self).__init__()
 
     def terminate(self):
+        """Destructor"""
         self.database = None
 
     def authenticate_user(self, email, password):
@@ -53,7 +56,7 @@ class UserMgr(object):
         if len(device_str) > 0:
             user_id, user_hash, user_realname = self.database.retrieve_user(email)
             self.database.create_user_device(user_id, device_str)
-        
+
         return True, "The user was created."
 
     def create_user_device(self, email, device_str):
@@ -64,7 +67,7 @@ class UserMgr(object):
         if len(device_str) == 0:
             return False, "Device string not provided."
 
-        user_id, db_hash1, user_name = self.database.retrieve_user(email)
+        user_id, _, _ = self.database.retrieve_user(email)
         self.database.create_user_device(user_id, device_str)
 
     def list_user_devices(self, user_id):
@@ -75,6 +78,7 @@ class UserMgr(object):
         return self.database.retrieve_user_devices(user_id)
 
     def list_users_followed(self, user_id):
+        """Returns the user ids for all users that are followed by the user with the specified id."""
         if self.database is None:
             return False, "No database."
         if user_id is None or len(user_id) == 0:
@@ -98,6 +102,7 @@ class UserMgr(object):
         return self.database.create_following_entry(email, following_name)
 
     def retrieve_user(self, email):
+        """Retrieve method for a user."""
         if self.database is None:
             return False, "No database."
         if email is None or len(email) == 0:
@@ -105,6 +110,7 @@ class UserMgr(object):
         return self.database.retrieve_user(email)
 
     def retrieve_matched_users(self, name):
+        """Returns a list of user names for users that match the specified regex."""
         if self.database is None:
             return False, "No database."
         if name is None or len(name) == 0:

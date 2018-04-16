@@ -648,7 +648,7 @@ class StraenWeb(object):
                 raise cherrypy.HTTPRedirect("/login")
 
             # Get the details of the logged in user.
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+            user_id, _, user_realname = self.user_mgr.retrieve_user(username)
 
             activities = self.data_mgr.retrieve_user_activities(user_id, 0, 10)
             activities_list_str = ""
