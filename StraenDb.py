@@ -1,10 +1,9 @@
 # Copyright 2017 Michael J Simms
 
-from bson.objectid import ObjectId
-
-import pymongo
 import sys
 import traceback
+from bson.objectid import ObjectId
+import pymongo
 import Database
 
 
