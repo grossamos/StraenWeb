@@ -1,4 +1,5 @@
 # Copyright 2017 Michael J Simms
+"""Database implementation"""
 
 import sys
 import traceback

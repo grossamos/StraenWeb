@@ -1,4 +1,5 @@
 # Copyright 2017 Michael J Simms
+"""Database base classes"""
 
 import os
 import sqlite3

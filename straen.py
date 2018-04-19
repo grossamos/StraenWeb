@@ -1,4 +1,5 @@
 # Copyright 2017 Michael J Simms
+"""Main application, contains all web page handlers"""
 
 import argparse
 import cherrypy
@@ -741,7 +742,7 @@ class StraenWeb(object):
                 raise cherrypy.HTTPRedirect("/login")
 
             # Get the details of the logged in user.
-            user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
+            user_id, _, user_realname = self.user_mgr.retrieve_user(username)
 
             devices = self.user_mgr.list_user_devices(user_id)
             device_list_str = ""
@@ -789,7 +790,7 @@ class StraenWeb(object):
                     saved_file.write(data)
 
             # Parse the file and store it's contents in the database.
-            importer = Importer(data_mgr)
+            importer = Importer.Importer(data_mgr)
             if not importer.import_file(username, local_file_name, uploaded_file_ext):
                 cherrypy.log.error('Unhandled exception in upload when processing ' + uploaded_file_name, 'EXEC', logging.WARNING)
 
