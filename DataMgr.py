@@ -1,10 +1,13 @@
 # Copyright 2017 Michael J Simms
+"""Data store abstraction"""
 
 import StraenDb
 import Importer
 
 
 class DataMgr(Importer.LocationWriter):
+    """Data store abstraction"""
+
     def __init__(self, root_dir):
         self.database = StraenDb.MongoDatabase(root_dir)
         self.database.connect()
@@ -14,12 +17,25 @@ class DataMgr(Importer.LocationWriter):
         """Destructor"""
         self.database = None
 
+    def create(self, username, stream_name, stream_description, activity_type):
+        """Inherited from LocationWriter."""
+        return None, None
+
+    def create_track(self, device_str, activity_id, track_name, track_description):
+        """Inherited from LocationWriter."""
+        pass
+
     def create_location(self, device_str, activity_id, date_time, latitude, longitude, altitude):
-        """ Adds a location to the database."""
+        """Inherited from LocationWriter. Create method for a location."""
         if self.database is None:
             return None, "No database."
 
         return self.database.create_location(device_str, activity_id, date_time, latitude, longitude, altitude)
+
+    def import_file(self, username, local_file_name, file_extension):
+        """Imports the contents of a local file into the database."""
+        importer = Importer.Importer(self)
+        return importer.import_file(username, local_file_name, file_extension)
 
     def retrieve_user_activities(self, user_id, start, num_results):
         """Returns a list containing all of the user's activities, up to num_results."""

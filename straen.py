@@ -17,7 +17,6 @@ import uuid
 
 import StraenApi
 import StraenKeys
-import Importer
 import DataMgr
 import UserMgr
 
@@ -790,8 +789,7 @@ class StraenWeb(object):
                     saved_file.write(data)
 
             # Parse the file and store it's contents in the database.
-            importer = Importer.Importer(data_mgr)
-            if not importer.import_file(username, local_file_name, uploaded_file_ext):
+            if not self.data_mgr.import_file(username, local_file_name, uploaded_file_ext):
                 cherrypy.log.error('Unhandled exception in upload when processing ' + uploaded_file_name, 'EXEC', logging.WARNING)
 
             # Remove the local file.

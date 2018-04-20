@@ -469,16 +469,8 @@ class MongoDatabase(Database.Database):
             self.log_error(sys.exc_info()[0])
         return None
 
-    def create(self, username, stream_name, stream_description):
-        """Inherited from LocationWriter."""
-        return None, None
-
-    def create_track(self, device_str, activity_id, track_name, track_description):
-        """Inherited from LocationWriter."""
-        pass
-
     def create_location(self, device_str, activity_id, date_time, latitude, longitude, altitude):
-        """Inherited from LocationWriter. Create method for a location."""
+        """Create method for a location."""
         if device_str is None:
             self.log_error(MongoDatabase.create_location.__name__ + "Unexpected empty object: device_str")
             return False

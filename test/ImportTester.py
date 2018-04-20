@@ -1,4 +1,6 @@
 # Copyright 2017 Michael J Simms
+"""Unit tests for file imports."""
+
 import argparse
 import inspect
 import os
@@ -12,7 +14,7 @@ import Importer
 class TestLocationWriter(Importer.LocationWriter):
     """Subclass that implements the location writer and will receive the locations as they are read from the file."""
 
-    def create(self, username, stream_name, stream_description):
+    def create(self, username, stream_name, stream_description, activity_type):
         return None, None
 
     def create_track(self, device_str, activity_id, track_name, track_description):
@@ -24,8 +26,8 @@ class TestLocationWriter(Importer.LocationWriter):
     def create_sensor_reading(self, device_str, activity_id, date_time, key, value):
         print device_str, activity_id, date_time, key, value
 
-
-if __name__ == "__main__":
+def main():
+    """Starts the tests."""
 
     successes = []
     failures = []
@@ -36,15 +38,23 @@ if __name__ == "__main__":
 
     store = TestLocationWriter()
     importer = Importer.Importer(store)
+    test_dir = os.path.abspath(os.path.join('.', args.dir))
 
-    for subdir, dirs, files in os.walk(args.dir):
+    for subdir, _, files in os.walk(test_dir):
+        print "Processing all files in: " + test_dir
         for current_file in files:
             full_path = os.path.join(subdir, current_file)
-            temp_file_name, temp_file_ext = os.path.splitext(full_path)
+            print "Processing: " + full_path
+            _, temp_file_ext = os.path.splitext(full_path)
             if importer.import_file("test user", full_path, temp_file_ext):
+                print "Success"
                 successes.append(current_file)
             else:
+                print "Failed"
                 failures.append(current_file)
 
     print "Num success: " + str(len(successes))
     print "Num failures: " + str(len(failures))
+
+if __name__ == "__main__":
+    main()
