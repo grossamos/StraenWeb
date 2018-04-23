@@ -12,9 +12,9 @@ HEART_RATE_KEY = "Heart Rate"
 CURRENT_PACE_KEY = "Current Pace"
 POWER_KEY = "Power"
 
-LOCATION_LAT_KEY = "latitutde"
-LOCATION_LON_KEY = "longitude"
-LOCATION_TIME_KEY = "time"
+LOCATION_LAT_KEY = 'latitude'
+LOCATION_LON_KEY = 'longitude'
+LOCATION_TIME_KEY = 'time'
 
 ACTIVITY_ID_KEY = "activity_id"
 ACTIVITY_DEVICE_STR_KEY = "device_str"
