@@ -32,12 +32,15 @@ ERROR_LOG = 'error.log'
 PRODUCT_NAME = 'Straen'
 SESSION_KEY = '_straen_username'
 
+LOGIN_URL = '/login'
+HTML_DIR = 'html'
+
 g_root_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_url = 'http://straen-app.com'
 g_tempfile_dir = os.path.join(g_root_dir, 'tempfile')
 g_tempmod_dir = os.path.join(g_root_dir, 'tempmod')
-g_map_single_html_file = os.path.join(g_root_dir, 'html', 'map_single.html')
-g_error_logged_in_html_file = os.path.join(g_root_dir, 'html', 'error_logged_in.html')
+g_map_single_html_file = os.path.join(g_root_dir, HTML_DIR, 'map_single.html')
+g_error_logged_in_html_file = os.path.join(g_root_dir, HTML_DIR, 'error_logged_in.html')
 g_app = None
 
 
@@ -87,9 +90,9 @@ def check_auth(*args, **kwargs):
             for condition in conditions:
                 # A condition is just a callable that returns true or false
                 if not condition():
-                    raise cherrypy.HTTPRedirect("/login")
+                    raise cherrypy.HTTPRedirect(LOGIN_URL)
         else:
-            raise cherrypy.HTTPRedirect("/login")
+            raise cherrypy.HTTPRedirect(LOGIN_URL)
 
 
 def require(*conditions):
@@ -405,15 +408,15 @@ class StraenWeb(object):
         last_lon = 0
 
         for location in locations:
-            route += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location['longitude']) + "),\n"
+            route += "\t\t\t\tnewCoord(" + str(location[StraenKeys.LOCATION_LAT_KEY]) + ", " + str(location[StraenKeys.LOCATION_LON_KEY]) + "),\n"
             last_loc = location
 
         if len(locations) > 0:
             first_loc = locations[0]
-            center_lat = first_loc['latitude']
-            center_lon = first_loc['longitude']
-            last_lat = last_loc['latitude']
-            last_lon = last_loc['longitude']
+            center_lat = first_loc[StraenKeys.LOCATION_LAT_KEY]
+            center_lon = first_loc[StraenKeys.LOCATION_LON_KEY]
+            last_lat = last_loc[StraenKeys.LOCATION_LAT_KEY]
+            last_lon = last_loc[StraenKeys.LOCATION_LON_KEY]
 
         current_speeds = self.data_mgr.retrieve_metadata(StraenKeys.CURRENT_SPEED_KEY, device_str, activity_id)
         current_speeds_str = ""
@@ -474,17 +477,17 @@ class StraenWeb(object):
 
             route_coordinates += "\t\t\tvar routeCoordinates" + str(device_index) + " = \n\t\t\t[\n"
             for location in locations:
-                route_coordinates += "\t\t\t\tnewCoord(" + str(location['latitude']) + ", " + str(location[']longitude']) + "),\n"
+                route_coordinates += "\t\t\t\tnewCoord(" + str(location[StraenKeys.LOCATION_LAT_KEY]) + ", " + str(location[StraenKeys.LOCATION_LON_KEY]) + "),\n"
                 last_loc = location
             route_coordinates += "\t\t\t];\n"
             route_coordinates += "\t\t\taddRoute(routeCoordinates" + str(device_index) + ");\n\n"
 
             if len(locations) > 0:
                 first_loc = locations[0]
-                center_lat = first_loc['latitude']
-                center_lon = first_loc['longitude']
-                last_lat = last_loc['latitude']
-                last_lon = last_loc['longitude']
+                center_lat = first_loc[StraenKeys.LOCATION_LAT_KEY]
+                center_lon = first_loc[StraenKeys.LOCATION_LON_KEY]
+                last_lat = last_loc[StraenKeys.LOCATION_LAT_KEY]
+                last_lon = last_loc[StraenKeys.LOCATION_LON_KEY]
 
         my_template = Template(filename=g_map_single_html_file, module_directory=g_tempmod_dir)
         return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=email, name=user_realname, center_lat=center_lat, center_lon=center_lon, last_lat=last_lat, last_lon=last_lon, route_coordinates=route_coordinates, routeLen=len(locations), user_id=str(user_id))
@@ -492,23 +495,35 @@ class StraenWeb(object):
     def render_activity_row(self, user_realname, activity, row_id):
         """Helper function for creating a table row describing an activity."""
 
-        activity_id = activity['activity_id']
-        if 'activity_name' in activity:
-            activity_name = activity['activity_name']
+        # Activity name
+        activity_id = activity[StraenKeys.ACTIVITY_ID_KEY]
+        if StraenKeys.ACTIVITY_NAME_KEY in activity:
+            activity_name = activity[StraenKeys.ACTIVITY_NAME_KEY]
         else:
             activity_name = "Untitled"
-        if 'Time' in activity:
-            activity_time = self.timestamp_code_to_str(activity['Time'])
-        else:
-            activity_time = "-"
+
+        # Activity time
+        activity_time = "-"
+        if StraenKeys.ACTIVITY_TIME_KEY in activity:
+            activity_time = self.timestamp_code_to_str(activity[StraenKeys.ACTIVITY_TIME_KEY])
+        elif StraenKeys.ACTIVITY_LOCATIONS_KEY in activity:
+            locations = activity[StraenKeys.ACTIVITY_LOCATIONS_KEY]
+            if len(locations) > 0:
+                first_loc = locations[0]
+                if StraenKeys.LOCATION_TIME_KEY in first_loc:
+                    time_num = first_loc[StraenKeys.LOCATION_TIME_KEY] / 1000
+                    activity_time = self.timestamp_code_to_str(time_num)
+
+        # Activity visibility
         checkbox_value = "checked"
         checkbox_label = "Public"
-        if 'visibility' in activity:
-            if activity['visibility'] == "private":
+        if StraenKeys.ACTIVITY_VISIBILITY_KEY in activity:
+            if activity[StraenKeys.ACTIVITY_VISIBILITY_KEY] == "private":
                 checkbox_value = "unchecked"
                 checkbox_label = "Private"
 
-        row = "<tr>"
+        row = "<div>\n"
+        row += "<table>"
         row += "<td>"
         row += activity_id
         row += "</td>"
@@ -519,17 +534,16 @@ class StraenWeb(object):
         if user_realname is not None:
             row += user_realname
             row += "<br>"
-        row += "<a href=\"" + g_root_url + "\\device\\" + activity['device_str'] + "?activity_id=" + activity_id + "\">"
+        row += "<a href=\"" + g_root_url + "\\device\\" + activity[StraenKeys.ACTIVITY_DEVICE_STR_KEY] + "?activity_id=" + activity_id + "\">"
         row += activity_name
         row += "</a></td>"
         row += "<td>"
-        row += "<div>\n"
-        row += "\t<input type=\"checkbox\" value=\"\" " + checkbox_value + " id=\"" + \
-            str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + activity['device_str'] + "\", " + activity_id + ")';>"
+        row += "<input type=\"checkbox\" value=\"\" " + checkbox_value + " id=\"" + \
+            str(row_id) + "\" onclick='handleVisibilityClick(this, \"" + activity[StraenKeys.ACTIVITY_DEVICE_STR_KEY] + "\", " + activity_id + ")';>"
         row += "<span>" + checkbox_label + "</span></label>"
-        row += "</div>\n"
         row += "</td>"
-        row += "</tr>\n"
+        row += "</table>\n"
+        row += "</div>\n"
         return row
 
     @staticmethod
@@ -560,7 +574,7 @@ class StraenWeb(object):
 
         try:
             cherrypy.response.status = 500
-            error_html_file = os.path.join(g_root_dir, 'html', 'error.html')
+            error_html_file = os.path.join(g_root_dir, HTML_DIR, 'error.html')
             my_template = Template(filename=error_html_file, module_directory=g_tempmod_dir)
             if error_str is None:
                 error_str = "Internal Error."
@@ -613,7 +627,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
@@ -627,7 +641,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'my_activities.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'my_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, activities_list=activities_list_str)
         except cherrypy.HTTPRedirect as e:
@@ -645,7 +659,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, _, user_realname = self.user_mgr.retrieve_user(username)
@@ -659,7 +673,7 @@ class StraenWeb(object):
                     row_id = row_id + 1
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'all_activities.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'all_activities.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, activities_list=activities_list_str)
         except cherrypy.HTTPRedirect as e:
@@ -677,7 +691,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
@@ -690,7 +704,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'following.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'following.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
         except cherrypy.HTTPRedirect as e:
@@ -708,7 +722,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
@@ -720,7 +734,7 @@ class StraenWeb(object):
                     users_list_str += self.render_user_row(user)
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'followers.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'followers.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, users_list=users_list_str)
         except cherrypy.HTTPRedirect as e:
@@ -738,7 +752,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, _, user_realname = self.user_mgr.retrieve_user(username)
@@ -755,7 +769,7 @@ class StraenWeb(object):
                     device_list_str += "</tr>\n"
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'device_list.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'device_list.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname, device_list=device_list_str)
         except cherrypy.HTTPRedirect as e:
@@ -772,7 +786,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Generate a random name for the local file.
             upload_path = os.path.normpath(g_tempfile_dir)
@@ -810,13 +824,13 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'import.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'import.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname)
         except cherrypy.HTTPRedirect as e:
@@ -834,13 +848,13 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             # Get the details of the logged in user.
             user_id, user_hash, user_realname = self.user_mgr.retrieve_user(username)
 
             # Render from template.
-            html_file = os.path.join(g_root_dir, 'html', 'settings.html')
+            html_file = os.path.join(g_root_dir, HTML_DIR, 'settings.html')
             my_template = Template(filename=html_file, module_directory=g_tempmod_dir)
             return my_template.render(nav=self.create_navbar(), product=PRODUCT_NAME, root_url=g_root_url, email=username, name=user_realname)
         except cherrypy.HTTPRedirect as e:
@@ -858,7 +872,7 @@ class StraenWeb(object):
             # Get the logged in user.
             username = cherrypy.session.get(SESSION_KEY)
             if username is None:
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect(LOGIN_URL)
 
             if self.user_mgr.request_to_follow(username, target_email):
                 result = ""
@@ -938,7 +952,7 @@ class StraenWeb(object):
         """Renders the login page."""
 
         try:
-            login_html_file = os.path.join(g_root_dir, 'html', 'login.html')
+            login_html_file = os.path.join(g_root_dir, HTML_DIR, 'login.html')
             my_template = Template(filename=login_html_file, module_directory=g_tempmod_dir)
             result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
@@ -950,7 +964,7 @@ class StraenWeb(object):
         """Renders the create login page."""
 
         try:
-            create_login_html_file = os.path.join(g_root_dir, 'html', 'create_login.html')
+            create_login_html_file = os.path.join(g_root_dir, HTML_DIR, 'create_login.html')
             my_template = Template(filename=create_login_html_file, module_directory=g_tempmod_dir)
             result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
@@ -962,7 +976,7 @@ class StraenWeb(object):
         """Renders the about page."""
 
         try:
-            about_html_file = os.path.join(g_root_dir, 'html', 'about.html')
+            about_html_file = os.path.join(g_root_dir, HTML_DIR, 'about.html')
             my_template = Template(filename=about_html_file, module_directory=g_tempmod_dir)
             result = my_template.render(product=PRODUCT_NAME, root_url=g_root_url)
         except:
